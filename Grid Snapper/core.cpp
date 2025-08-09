@@ -225,7 +225,7 @@ void drawText(float x_pos, float y_pos, float scale, float original_scale, strin
 }
 
 void drawDeathCounter() {
-    drawText(100.0, 100.0, 2.0, 1.0, "Deaths: 0");
+    drawText(100.0, 100.0, 2.0, 1.0, "Deaths: ");
 }
 
 void drawTimer() {
