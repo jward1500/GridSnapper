@@ -37,10 +37,18 @@ static Uint64 death_time_in_level;
 static float deathX;
 static float deathY;
 
+// variables for winning animation
+static bool in_winning_animation = false;
+static Uint64 winning_animation_start_time;
+static Uint64 winning_time_in_level;
+
 // variables used for level loop UI
 static bool in_game = true;
 static Game game;
 static Uint64 level_start_time;
+
+// variables used for game summary
+static bool in_game_summary = false;
 
 /*---------------------------------------------*/
 
@@ -192,6 +200,17 @@ void activateDeathAnimation(MoveDirection dir) {
     death_time_in_level = SDL_GetTicks() - level_start_time;
 }
 
+void activateWinningAnimation() {
+    in_game = false;
+    in_winning_animation = true;
+
+    // set winning animation timer start to now
+    winning_animation_start_time = SDL_GetTicks();
+
+    // set winning time to how long user has been in level
+    winning_time_in_level = SDL_GetTicks() - level_start_time;
+}
+
 // handle all keyboard inputs when user is in a game
 void handleGameInput(SDL_Event* event) {
 
@@ -221,6 +240,9 @@ void handleGameInput(SDL_Event* event) {
 
     if (move_result == MoveResult::DIE) {
         activateDeathAnimation(move_direction);
+    }
+    else if (move_result == MoveResult::WIN) {
+        activateWinningAnimation();
     }
 }
 
@@ -255,8 +277,9 @@ void drawBackgroundSprite() {
 
 // update the player sprite postion based on the game data
 void setPlayerSpritePosition() {
-    playerX = (float)game.pos.x * 100 + 100;
-    playerY = (float)game.pos.y * 100 + 300;
+    Pos player_pos = game.GetPlayerPos();
+    playerX = (float)player_pos.x * 100 + 100;
+    playerY = (float)player_pos.y * 100 + 300;
 }
 
 void drawPlayerSprite() {
@@ -287,8 +310,16 @@ void drawObstaclesAndGoals() {
         for (int j = 0; j < GRID_HEIGHT; ++j) {
             Pos current_pos = { i, j };
             GridSpace current_space = game.GetGridSpace(current_pos);
-            if (current_space == GridSpace::OBSTACLE) { drawObstacleSprite(current_pos); }
-            else if (current_space == GridSpace::GOAL) { drawGoalSprite(current_pos); }
+
+            // we want everything to be green in winning animation
+            if (in_winning_animation) {
+                if (current_space == GridSpace::OBSTACLE || current_space == GridSpace::GOAL) { drawGoalSprite(current_pos); }
+            }
+            // otherwise use normal sprites
+            else {
+                if (current_space == GridSpace::OBSTACLE) { drawObstacleSprite(current_pos); }
+                else if (current_space == GridSpace::GOAL) { drawGoalSprite(current_pos); }
+            }
         }
     }
 }
@@ -324,6 +355,12 @@ void drawTimer() {
         time_elapsed_ms = death_time_in_level;
     }
 
+    // if the player is in winning animation, we want to display the time of winning in green instead
+    if (in_winning_animation) {
+        SDL_SetRenderDrawColor(renderer, 0, 255, 0, SDL_ALPHA_OPAQUE); // set color to green
+        time_elapsed_ms = winning_time_in_level;
+    }
+
     // freeze and turn red after 1 minute
     if (time_elapsed_ms >= 59999) {
         SDL_SetRenderDrawColor(renderer, 255, 0, 0, SDL_ALPHA_OPAQUE); // set color to red
@@ -347,7 +384,9 @@ void drawTimer() {
 }
 
 void drawLevelCounter() {
-    drawText(1000.0, 100.0, 2.0, 1.0, "1/10");
+    std::stringstream ss;
+    ss << game.GetCurrentLevel() << "/10";
+    drawText(1000.0, 100.0, 2.0, 1.0, ss.str());
 }
 
 void drawUI() {
@@ -369,6 +408,7 @@ void executeDeathAnimation() {
         in_death_animation = false;
         in_game = true;
         game.IncrementDeathCounter();
+        game.SetCurrentLevelTime(winning_time_in_level - level_start_time);
         startLevel();
         return;
     }
@@ -390,6 +430,27 @@ void executeDeathAnimation() {
     }
     else if (current_animation_time < 2000) {
         drawDeathSprite();
+        return;
+    }
+}
+
+void executeWinningAnimation() {
+
+    Uint32 current_animation_time = SDL_GetTicks() - winning_animation_start_time;
+
+    // check to see if death animation timer is up
+    if (current_animation_time > 2000) {
+        in_winning_animation = false;
+        
+        // update the game data
+        if (!game.IncrementCurrentLevel()) {
+            in_game_summary = true;
+        }
+        else {
+            in_game = true;
+        }
+
+        startLevel();
         return;
     }
 }
@@ -422,6 +483,18 @@ SDL_AppResult SDL_AppIterate(void* appstate)
 
         /* execute death animation */
         executeDeathAnimation();
+    }
+    else if (in_winning_animation) {
+
+        /* draw sprites */
+        drawBackgroundSprite();
+        drawObstaclesAndGoals();
+
+        /* draw UI */
+        drawUI();
+
+        /* execute winning animation */
+        executeWinningAnimation();
     }
 
     SDL_RenderPresent(renderer);  /* put it all on the screen! */

@@ -12,6 +12,12 @@ Game::Game() {
 
 	pullTimeRecords();
 	setLevelData();
+
+	// set all current level times to 0
+	current_game_stats.level_times.resize(10);
+	for (int i = 0; i < current_game_stats.level_times.size(); ++i) {
+		current_game_stats.level_times[i] = 0;
+	}
 }
 
 // later, this function will attempt to pull old records from the persistent data
@@ -68,6 +74,24 @@ void Game::IncrementDeathCounter() {
 
 int Game::GetDeathCount() {
 	return current_game_stats.deaths;
+}
+
+Pos Game::GetPlayerPos() {
+	return pos;
+}
+
+int Game::GetCurrentLevel() {
+	return current_level + 1;
+}
+
+bool Game::IncrementCurrentLevel() {
+	if (current_level == 9) { return false; }
+	++current_level;
+	return true;
+}
+
+void Game::SetCurrentLevelTime(uint64_t t) {
+	current_game_stats.level_times[current_level] = t;
 }
 
 // this hard code the level data for now, it will manually set the matrices in the level objects
@@ -129,30 +153,112 @@ void Game::setLevelData() {
 		{
 			// 5
 			GridSpace::EMPTY,
-			GridSpace::OBSTACLE,
-			GridSpace::OBSTACLE,
-			GridSpace::OBSTACLE,
-			GridSpace::OBSTACLE,
-			GridSpace::OBSTACLE,
-			GridSpace::OBSTACLE,
-			GridSpace::OBSTACLE,
-			GridSpace::OBSTACLE,
-			GridSpace::OBSTACLE
+			GridSpace::EMPTY,
+			GridSpace::EMPTY,
+			GridSpace::EMPTY,
+			GridSpace::EMPTY,
+			GridSpace::EMPTY,
+			GridSpace::EMPTY,
+			GridSpace::EMPTY,
+			GridSpace::EMPTY,
+			GridSpace::EMPTY,
 		},
 		{
 			// 6
 			GridSpace::EMPTY,
+			GridSpace::EMPTY,
+			GridSpace::EMPTY,
+			GridSpace::EMPTY,
+			GridSpace::EMPTY,
+			GridSpace::EMPTY,
+			GridSpace::EMPTY,
+			GridSpace::EMPTY,
+			GridSpace::EMPTY,
+			GridSpace::EMPTY,
+		}
+	};
+
+	std::vector<std::vector<GridSpace>> level_2 = {
+	{
+			// 1
 			GridSpace::OBSTACLE,
 			GridSpace::OBSTACLE,
+			GridSpace::EMPTY,
+			GridSpace::EMPTY,
+			GridSpace::EMPTY,
 			GridSpace::OBSTACLE,
-			GridSpace::OBSTACLE,
-			GridSpace::OBSTACLE,
-			GridSpace::OBSTACLE,
-			GridSpace::OBSTACLE,
-			GridSpace::OBSTACLE,
+			GridSpace::EMPTY,
+			GridSpace::EMPTY,
+			GridSpace::EMPTY,
 			GridSpace::OBSTACLE
+		},
+		{
+			// 2
+			GridSpace::EMPTY,
+			GridSpace::EMPTY,
+			GridSpace::EMPTY,
+			GridSpace::OBSTACLE,
+			GridSpace::EMPTY,
+			GridSpace::OBSTACLE,
+			GridSpace::EMPTY,
+			GridSpace::OBSTACLE,
+			GridSpace::EMPTY,
+			GridSpace::OBSTACLE
+		},
+		{
+			// 3
+			GridSpace::EMPTY,
+			GridSpace::OBSTACLE,
+			GridSpace::OBSTACLE,
+			GridSpace::OBSTACLE,
+			GridSpace::EMPTY,
+			GridSpace::OBSTACLE,
+			GridSpace::EMPTY,
+			GridSpace::OBSTACLE,
+			GridSpace::EMPTY,
+			GridSpace::OBSTACLE,
+		},
+		{
+			// 4
+			GridSpace::EMPTY,
+			GridSpace::EMPTY,
+			GridSpace::EMPTY,
+			GridSpace::OBSTACLE,
+			GridSpace::EMPTY,
+			GridSpace::OBSTACLE,
+			GridSpace::EMPTY,
+			GridSpace::OBSTACLE,
+			GridSpace::EMPTY,
+			GridSpace::GOAL
+		},
+		{
+			// 5
+			GridSpace::OBSTACLE,
+			GridSpace::OBSTACLE,
+			GridSpace::EMPTY,
+			GridSpace::OBSTACLE,
+			GridSpace::EMPTY,
+			GridSpace::OBSTACLE,
+			GridSpace::EMPTY,
+			GridSpace::OBSTACLE,
+			GridSpace::EMPTY,
+			GridSpace::OBSTACLE,
+		},
+		{
+			// 6
+			GridSpace::EMPTY,
+			GridSpace::EMPTY,
+			GridSpace::EMPTY,
+			GridSpace::OBSTACLE,
+			GridSpace::EMPTY,
+			GridSpace::EMPTY,
+			GridSpace::EMPTY,
+			GridSpace::OBSTACLE,
+			GridSpace::EMPTY,
+			GridSpace::OBSTACLE,
 		}
 	};
 
 	levels.push_back(Level(level_1));
+	levels.push_back(Level(level_2));
 }

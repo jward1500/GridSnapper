@@ -25,9 +25,6 @@ enum class MoveResult {
 
 class Game {
 public:
-	Pos pos;
-	int current_level;
-
 	Game();
 	MoveResult Move(MoveDirection dir);
 
@@ -41,10 +38,21 @@ public:
 
 	int GetDeathCount();
 
+	Pos GetPlayerPos();
+
+	int GetCurrentLevel();
+
+	// returns false if the player is on the last level
+	bool IncrementCurrentLevel();
+
+	void SetCurrentLevelTime(uint64_t t);
+
 private:
 	std::vector<Level> levels;
 	std::vector<uint32_t> top_times;
 	GameStats current_game_stats;
+	Pos pos;
+	int current_level;
 
 	// helper functions
 	void pullTimeRecords();
