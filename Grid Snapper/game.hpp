@@ -34,6 +34,13 @@ public:
 	// get the grid space on the current level
 	GridSpace GetGridSpace(Pos pos);
 
+	// reset the level in the context of a death
+	void ResetCurrentLevel();
+
+	void IncrementDeathCounter();
+
+	int GetDeathCount();
+
 private:
 	std::vector<Level> levels;
 	std::vector<uint32_t> top_times;

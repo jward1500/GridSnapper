@@ -8,8 +8,8 @@ using std::vector;
 Game::Game() {
 	// always start player in bottom-left corner
 	pos = { 0, 5 };
-
 	current_level = 0;
+
 	pullTimeRecords();
 	setLevelData();
 }
@@ -42,7 +42,6 @@ MoveResult Game::Move(MoveDirection dir) {
 
 	GridSpace future_space = level.GetGridSpace(next_pos);
 	if (future_space == GridSpace::OBSTACLE) {
-		++current_game_stats.deaths;
 		return MoveResult::DIE;
 	}
 	else if (future_space == GridSpace::GOAL) {
@@ -59,6 +58,17 @@ GridSpace Game::GetGridSpace(Pos pos) {
 	return level.GetGridSpace(pos);
 }
 
+void Game::ResetCurrentLevel() {
+	pos = { 0 , 5 };
+}
+
+void Game::IncrementDeathCounter() {
+	++current_game_stats.deaths;
+}
+
+int Game::GetDeathCount() {
+	return current_game_stats.deaths;
+}
 
 // this hard code the level data for now, it will manually set the matrices in the level objects
 void Game::setLevelData() {

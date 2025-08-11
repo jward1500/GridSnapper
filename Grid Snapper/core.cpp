@@ -21,15 +21,28 @@ using std::string;
 using std::cout;
 using std::endl;
 
-// general sdl variables used by everyone
+/* general sdl variables used by everyone */
 static SDL_Window* window = NULL;
 static SDL_Renderer* renderer = NULL;
 static SDL_FRect dst_rect;
 
-// general game logic variables used by the UI
-static bool inGame = true;
+/*---------------------------------------------*/
+
+/* general game logic variables used by the UI */
+
+// variables for death animation
+static bool in_death_animation = false;
+static Uint64 death_animation_start_time;
+static Uint64 death_time_in_level;
+static float deathX;
+static float deathY;
+
+// variables used for level loop UI
+static bool in_game = true;
 static Game game;
 static Uint64 level_start_time;
+
+/*---------------------------------------------*/
 
 // player sprite variables
 static SDL_Texture* p_texture = NULL;
@@ -55,12 +68,21 @@ static SDL_Texture* o_texture = NULL;
 static int o_texture_width = 0;
 static int o_texture_height = 0;
 
+// die sprite variables
+static SDL_Texture* d_texture = NULL;
+static int d_texture_width = 0;
+static int d_texture_height = 0;
 
+/*---------------------------------------------*/
+
+/* constants */
 #define WINDOW_WIDTH 1200
 #define WINDOW_HEIGHT 900
 #define MOVEMENT_JUMP 100;
 constexpr int GRID_WIDTH = 10;
 constexpr int GRID_HEIGHT = 6;
+
+/*---------------------------------------------*/
 
 
 /*  Take the relative file path of the bitmap and loads it onto the given texture
@@ -101,6 +123,7 @@ static bool load_texture_from_BMP(const std::string& relative_file_path, SDL_Tex
 // call this function to start the level timer
 void startLevel() {
     level_start_time = SDL_GetTicks(); // set the level start time to now
+    game.ResetCurrentLevel();
 }
 
 /* This function runs once at startup. */
@@ -127,11 +150,78 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
     if (!load_texture_from_BMP("resources/game_grid.bmp", bg_texture, bg_texture_width, bg_texture_height)) { return SDL_APP_FAILURE; }
     if (!load_texture_from_BMP("resources/goal.bmp", g_texture, g_texture_width, g_texture_height)) { return SDL_APP_FAILURE; }
     if (!load_texture_from_BMP("resources/obstacle.bmp", o_texture, o_texture_width, o_texture_height)) { return SDL_APP_FAILURE; }
+    if (!load_texture_from_BMP("resources/die.bmp", d_texture, d_texture_width, d_texture_height)) { return SDL_APP_FAILURE; }
 
     // this logic will change
     startLevel();
 
     return SDL_APP_CONTINUE;  /* carry on with the program! */
+}
+
+// set the death sprite location, mark game state as in_death_animation, set death animation timer
+void activateDeathAnimation(MoveDirection dir) {
+
+    // update the game state
+    in_game = false;
+    in_death_animation = true;
+
+    // set death sprite location
+    switch (dir) {
+    case MoveDirection::LEFT:
+        deathX = playerX - 100.0;
+        deathY = playerY;
+        break;
+    case MoveDirection::UP:
+        deathX = playerX;
+        deathY = playerY - 100.0;
+        break;
+    case MoveDirection::RIGHT:
+        deathX = playerX + 100.0;
+        deathY = playerY;
+        break;
+    case MoveDirection::DOWN:
+        deathX = playerX;
+        deathY = playerY + 100.0;
+        break;
+    }
+
+    // set death animation timer start to now
+    death_animation_start_time = SDL_GetTicks();
+
+    // set death time to how long user has been in the level
+    death_time_in_level = SDL_GetTicks() - level_start_time;
+}
+
+// handle all keyboard inputs when user is in a game
+void handleGameInput(SDL_Event* event) {
+
+    MoveDirection move_direction;
+    MoveResult move_result;
+
+    switch (event->key.scancode) {
+    case SDL_SCANCODE_A:
+        move_direction = MoveDirection::LEFT;
+        move_result = game.Move(move_direction);
+        break;
+    case SDL_SCANCODE_W:
+        move_direction = MoveDirection::UP;
+        move_result = game.Move(move_direction);
+        break;
+    case SDL_SCANCODE_D:
+        move_direction = MoveDirection::RIGHT;
+        move_result = game.Move(move_direction);
+        break;
+    case SDL_SCANCODE_S:
+        move_direction = MoveDirection::DOWN;
+        move_result = game.Move(move_direction);
+        break;
+    default:
+        move_result = MoveResult::SUCCESS;
+    }
+
+    if (move_result == MoveResult::DIE) {
+        activateDeathAnimation(move_direction);
+    }
 }
 
 /* This function runs when a new event (mouse input, keypresses, etc) occurs. */
@@ -142,20 +232,7 @@ SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event)
     }
 
     if (event->type == SDL_EVENT_KEY_DOWN) {
-        switch (event->key.scancode) {
-        case SDL_SCANCODE_A:
-            game.Move(MoveDirection::LEFT);
-            break;
-        case SDL_SCANCODE_W:
-            game.Move(MoveDirection::UP);
-            break;
-        case SDL_SCANCODE_D:
-            game.Move(MoveDirection::RIGHT);
-            break;
-        case SDL_SCANCODE_S:
-            game.Move(MoveDirection::DOWN);
-            break;
-        }
+        if (in_game) { handleGameInput(event); }
     }
 
     return SDL_APP_CONTINUE;  /* carry on with the program! */
@@ -199,6 +276,11 @@ void drawGoalSprite(Pos pos) {
     drawSprite(goalX, goalY, g_texture, g_texture_width, g_texture_height);
 }
 
+// death sprite location should be set already
+void drawDeathSprite() {
+    drawSprite(deathX, deathY, d_texture, d_texture_width, d_texture_height);
+}
+
 // use game data to determine where the obstacle and the goal sprites should be drawn
 void drawObstaclesAndGoals() {
     for (int i = 0; i < GRID_WIDTH; ++i) {
@@ -225,7 +307,9 @@ void drawText(float x_pos, float y_pos, float scale, float original_scale, strin
 }
 
 void drawDeathCounter() {
-    drawText(100.0, 100.0, 2.0, 1.0, "Deaths: ");
+    std::stringstream ss;
+    ss << "Deaths: " << game.GetDeathCount();
+    drawText(100.0, 100.0, 2.0, 1.0, ss.str());
 }
 
 void drawTimer() {
@@ -234,6 +318,11 @@ void drawTimer() {
     Uint64 time_elapsed_ms = SDL_GetTicks() - level_start_time;
     std::stringstream ss;
 
+    // if the player is in death animation, we want to display the time of death in red instead
+    if (in_death_animation) {
+        SDL_SetRenderDrawColor(renderer, 255, 0, 0, SDL_ALPHA_OPAQUE); // set color to red
+        time_elapsed_ms = death_time_in_level;
+    }
 
     // freeze and turn red after 1 minute
     if (time_elapsed_ms >= 59999) {
@@ -268,6 +357,43 @@ void drawUI() {
     drawLevelCounter();
 }
 
+/* calling this will effectively play the death animation for 2.0 seconds, and then will automatically 
+   switch it out of the death animation and back to the game */ 
+
+void executeDeathAnimation() {
+
+    Uint32 current_animation_time = SDL_GetTicks() - death_animation_start_time;
+    
+    // check to see if death animation timer is up
+    if (current_animation_time > 2000) {
+        in_death_animation = false;
+        in_game = true;
+        game.IncrementDeathCounter();
+        startLevel();
+        return;
+    }
+
+    /* Animation sequence */
+
+    // freeze for 0.5 seconds, no death sprite
+    if (current_animation_time < 500) {
+        return;
+    }
+    // display for 0.5 seconds 
+    else if (current_animation_time < 1000) {
+        drawDeathSprite();
+        return;
+    }
+    // hide for 0.5 seconds
+    else if (current_animation_time < 1500) {
+        return;
+    }
+    else if (current_animation_time < 2000) {
+        drawDeathSprite();
+        return;
+    }
+}
+
 
 /* This function runs once per frame, and is the heart of the program. */
 SDL_AppResult SDL_AppIterate(void* appstate)
@@ -276,13 +402,27 @@ SDL_AppResult SDL_AppIterate(void* appstate)
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);  /* black, full alpha */
     SDL_RenderClear(renderer);  /* start with a blank canvas. */
 
-    /* draw sprites */
-    drawBackgroundSprite();
-    drawPlayerSprite();
-    drawObstaclesAndGoals();
+    if (in_game) {
+        /* draw sprites */
+        drawBackgroundSprite();
+        drawPlayerSprite();
+        drawObstaclesAndGoals();
 
-    /* draw UI */
-    drawUI();
+        /* draw UI */
+        drawUI();
+    }
+    else if (in_death_animation) {
+
+        /* draw sprites */
+        drawBackgroundSprite();
+        drawObstaclesAndGoals();
+
+        /* draw UI */
+        drawUI();
+
+        /* execute death animation */
+        executeDeathAnimation();
+    }
 
     SDL_RenderPresent(renderer);  /* put it all on the screen! */
 
@@ -296,5 +436,6 @@ void SDL_AppQuit(void* appstate, SDL_AppResult result)
     SDL_DestroyTexture(bg_texture);
     SDL_DestroyTexture(o_texture);
     SDL_DestroyTexture(g_texture);
+    SDL_DestroyTexture(d_texture);
     /* SDL will clean up the window/renderer for us. */
 }
