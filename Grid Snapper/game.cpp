@@ -93,6 +93,11 @@ bool Game::IncrementCurrentLevel() {
 
 void Game::SetCurrentLevelTime(uint64_t t) {
 	current_game_stats.level_times[current_level] = t;
+	current_game_stats.total_time += t;
+}
+
+GameStats Game::GetLevelStats() {
+	return current_game_stats;
 }
 
 // this hard code the level data for now, it will manually set the matrices in the level objects

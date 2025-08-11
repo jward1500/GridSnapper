@@ -47,6 +47,9 @@ public:
 
 	void SetCurrentLevelTime(uint64_t t);
 
+	// assumes the game is finished
+	GameStats GetLevelStats();
+
 private:
 	std::vector<Level> levels;
 	std::vector<uint32_t> top_times;

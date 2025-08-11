@@ -47,8 +47,11 @@ static bool in_game = true;
 static Game game;
 static Uint64 level_start_time;
 
-// variables used for game summary
-static bool in_game_summary = false;
+// variables used for game summary animation
+static bool in_game_summary_animation = false;
+static Uint64 summary_animation_start_time;
+static GameStats final_game_stats;
+
 
 /*---------------------------------------------*/
 
@@ -209,6 +212,9 @@ void activateWinningAnimation() {
 
     // set winning time to how long user has been in level
     winning_time_in_level = SDL_GetTicks() - level_start_time;
+
+    // set the winning time for the level in the game data
+    game.SetCurrentLevelTime(winning_time_in_level );
 }
 
 // handle all keyboard inputs when user is in a game
@@ -260,6 +266,21 @@ SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event)
     return SDL_APP_CONTINUE;  /* carry on with the program! */
 }
 
+// general purpose function to convert a time in miliseconds to a string in seconds
+string formatMilisecondsString(Uint64 t) {
+
+    std::stringstream ss;
+    int seconds = t / 1000;
+    t -= seconds * 1000;
+    int tenths = t / 100;
+    t -= tenths * 100;
+    int hundredths = t / 10;
+
+    // format the time string with these calculated values
+    string seconds_padding = seconds < 10 ? "0" : "";
+    ss << seconds_padding << seconds << ":" << tenths << hundredths;
+    return ss.str();
+}
 
 
 // general purpose function to draw any rectangle sprite on the screen
@@ -347,7 +368,7 @@ void drawTimer() {
 
     // calculate seconds, tenths, and hundredths from total ms elapsed
     Uint64 time_elapsed_ms = SDL_GetTicks() - level_start_time;
-    std::stringstream ss;
+    string time_string;
 
     // if the player is in death animation, we want to display the time of death in red instead
     if (in_death_animation) {
@@ -364,22 +385,14 @@ void drawTimer() {
     // freeze and turn red after 1 minute
     if (time_elapsed_ms >= 59999) {
         SDL_SetRenderDrawColor(renderer, 255, 0, 0, SDL_ALPHA_OPAQUE); // set color to red
-        ss << "59:99";
+        time_string = "59:99";
     }
     else {
-        int seconds = time_elapsed_ms / 1000;
-        time_elapsed_ms -= seconds * 1000;
-        int tenths = time_elapsed_ms / 100;
-        time_elapsed_ms -= tenths * 100;
-        int hundredths = time_elapsed_ms / 10;
-
-        // format the time string with these calculated values
-        string seconds_padding = seconds < 10 ? "0" : "";
-        ss << seconds_padding << seconds << ":" << tenths << hundredths;
+        time_string = formatMilisecondsString(time_elapsed_ms);
     }
 
     // draw the clock text
-    drawText(505.0, 100.0, 5.0, 1.0, ss.str());
+    drawText(505.0, 100.0, 5.0, 1.0, time_string);
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE); // set color back to white
 }
 
@@ -408,7 +421,6 @@ void executeDeathAnimation() {
         in_death_animation = false;
         in_game = true;
         game.IncrementDeathCounter();
-        game.SetCurrentLevelTime(winning_time_in_level - level_start_time);
         startLevel();
         return;
     }
@@ -438,20 +450,137 @@ void executeWinningAnimation() {
 
     Uint32 current_animation_time = SDL_GetTicks() - winning_animation_start_time;
 
-    // check to see if death animation timer is up
+    // check to see if winning animation timer is up
     if (current_animation_time > 2000) {
         in_winning_animation = false;
         
-        // update the game data
+        // update the game data fow the game summary
         if (!game.IncrementCurrentLevel()) {
-            in_game_summary = true;
+            final_game_stats = game.GetLevelStats();
+            summary_animation_start_time = SDL_GetTicks();
+            in_game_summary_animation = true;
         }
         else {
             in_game = true;
+            startLevel();
         }
 
-        startLevel();
         return;
+    }
+}
+
+void drawSummaryTitleText() {
+    drawText(362.5, 100.0, 5.0, 1.0, "GAME RESULTS");
+}
+
+void drawDeathResultText() {
+    std::stringstream ss;
+    ss << "Deaths: " << final_game_stats.deaths;
+    drawText(300.0, 200.0, 2.0, 1.0, ss.str());
+}
+
+// takes a parameter to control how many level times are displayed out of the ten
+void drawLevelTimes(int num_levels) {
+    for (int i = 0; i < num_levels; ++i) {
+        std::stringstream ss;
+        Uint64 level_time_ms = final_game_stats.level_times[i];
+
+        ss << "Level " << i + 1 << ": " << formatMilisecondsString(level_time_ms);
+        drawText(300.0, 275.0 + (i * 45.0), 2.0, 1.0, ss.str());
+    }
+}
+
+void drawTotalTime(bool should_display_time) {
+    std::stringstream ss;
+    ss << "TOTAL TIME: ";
+    if (should_display_time) { ss << formatMilisecondsString(final_game_stats.total_time); }
+    drawText(300.0, 750.0, 3.0, 1.0, ss.str());
+}
+
+// display the game stats in a timed manner
+void executeGameSummaryAnimation() {
+
+    Uint32 current_animation_time = SDL_GetTicks() - summary_animation_start_time;
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE); // set color to white
+
+    // check to see if summary animation timer is up
+    if (current_animation_time > 6000) {
+        // TODO: Update Game State
+        drawSummaryTitleText();
+        drawDeathResultText();
+        drawLevelTimes(10);
+        drawTotalTime(true);
+    }
+
+    // black screen for 1 second
+    if (current_animation_time < 800) {
+        return;
+    }
+    // make title text appear after 1 second
+    else if (current_animation_time < 1300) {
+        drawSummaryTitleText();
+    }
+    // make the death result text appear
+    else if (current_animation_time < 2000) {
+        drawSummaryTitleText();
+        drawDeathResultText();
+    }
+    // show each time every quarter of a second
+    else if (current_animation_time < 2250) {
+        drawSummaryTitleText();
+        drawDeathResultText();
+        drawLevelTimes(1);
+    }
+    else if (current_animation_time < 2500) {
+        drawSummaryTitleText();
+        drawDeathResultText();
+        drawLevelTimes(2);
+    }
+    else if (current_animation_time < 2750) {
+        drawSummaryTitleText();
+        drawDeathResultText();
+        drawLevelTimes(3);
+    }
+    else if (current_animation_time < 3000) {
+        drawSummaryTitleText();
+        drawDeathResultText();
+        drawLevelTimes(4);
+    }
+    else if (current_animation_time < 3250) {
+        drawSummaryTitleText();
+        drawDeathResultText();
+        drawLevelTimes(5);
+    }
+    else if (current_animation_time < 3500) {
+        drawSummaryTitleText();
+        drawDeathResultText();
+        drawLevelTimes(6);
+    }
+    else if (current_animation_time < 3750) {
+        drawSummaryTitleText();
+        drawDeathResultText();
+        drawLevelTimes(7);
+    }
+    else if (current_animation_time < 4000) {
+        drawSummaryTitleText();
+        drawDeathResultText();
+        drawLevelTimes(8);
+    }
+    else if (current_animation_time < 4250) {
+        drawSummaryTitleText();
+        drawDeathResultText();
+        drawLevelTimes(9);
+    }
+    else if (current_animation_time < 5000) {
+        drawSummaryTitleText();
+        drawDeathResultText();
+        drawLevelTimes(10);
+    }
+    else if (current_animation_time < 6000) {
+        drawSummaryTitleText();
+        drawDeathResultText();
+        drawLevelTimes(10);
+        drawTotalTime(false);
     }
 }
 
@@ -495,6 +624,9 @@ SDL_AppResult SDL_AppIterate(void* appstate)
 
         /* execute winning animation */
         executeWinningAnimation();
+    }
+    else if (in_game_summary_animation) {
+        executeGameSummaryAnimation();
     }
 
     SDL_RenderPresent(renderer);  /* put it all on the screen! */
