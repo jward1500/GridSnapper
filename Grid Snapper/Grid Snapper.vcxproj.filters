@@ -24,12 +24,18 @@
     <ClCompile Include="level.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="levelData.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="game.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="level.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="levelData.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

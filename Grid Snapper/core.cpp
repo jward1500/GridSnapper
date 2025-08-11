@@ -218,19 +218,19 @@ void handleGameInput(SDL_Event* event) {
     MoveResult move_result;
 
     switch (event->key.scancode) {
-    case SDL_SCANCODE_A:
+    case SDL_SCANCODE_LEFT:
         move_direction = MoveDirection::LEFT;
         move_result = game.Move(move_direction);
         break;
-    case SDL_SCANCODE_W:
+    case SDL_SCANCODE_UP:
         move_direction = MoveDirection::UP;
         move_result = game.Move(move_direction);
         break;
-    case SDL_SCANCODE_D:
+    case SDL_SCANCODE_RIGHT:
         move_direction = MoveDirection::RIGHT;
         move_result = game.Move(move_direction);
         break;
-    case SDL_SCANCODE_S:
+    case SDL_SCANCODE_DOWN:
         move_direction = MoveDirection::DOWN;
         move_result = game.Move(move_direction);
         break;

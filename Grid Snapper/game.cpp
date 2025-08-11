@@ -1,4 +1,5 @@
 #include "game.hpp"
+#include "levelData.hpp"
 
 #include <iostream>
 using namespace std;
@@ -96,169 +97,14 @@ void Game::SetCurrentLevelTime(uint64_t t) {
 
 // this hard code the level data for now, it will manually set the matrices in the level objects
 void Game::setLevelData() {
-
-	std::vector<std::vector<GridSpace>> level_1 = {
-	{
-			// 1
-			GridSpace::GOAL,
-			GridSpace::EMPTY,
-			GridSpace::EMPTY,
-			GridSpace::EMPTY,
-			GridSpace::EMPTY,
-			GridSpace::EMPTY,
-			GridSpace::EMPTY,
-			GridSpace::EMPTY,
-			GridSpace::EMPTY,
-			GridSpace::EMPTY,
-		},
-		{
-			// 2
-			GridSpace::OBSTACLE,
-			GridSpace::OBSTACLE,
-			GridSpace::OBSTACLE,
-			GridSpace::OBSTACLE,
-			GridSpace::OBSTACLE,
-			GridSpace::OBSTACLE,
-			GridSpace::OBSTACLE,
-			GridSpace::OBSTACLE,
-			GridSpace::OBSTACLE,
-			GridSpace::EMPTY
-		},
-		{
-			// 3
-			GridSpace::EMPTY,
-			GridSpace::EMPTY,
-			GridSpace::EMPTY,
-			GridSpace::EMPTY,
-			GridSpace::EMPTY,
-			GridSpace::EMPTY,
-			GridSpace::EMPTY,
-			GridSpace::EMPTY,
-			GridSpace::EMPTY,
-			GridSpace::EMPTY,
-		},
-		{
-			// 4
-			GridSpace::EMPTY,
-			GridSpace::OBSTACLE,
-			GridSpace::OBSTACLE,
-			GridSpace::OBSTACLE,
-			GridSpace::OBSTACLE,
-			GridSpace::OBSTACLE,
-			GridSpace::OBSTACLE,
-			GridSpace::OBSTACLE,
-			GridSpace::OBSTACLE,
-			GridSpace::OBSTACLE
-		},
-		{
-			// 5
-			GridSpace::EMPTY,
-			GridSpace::EMPTY,
-			GridSpace::EMPTY,
-			GridSpace::EMPTY,
-			GridSpace::EMPTY,
-			GridSpace::EMPTY,
-			GridSpace::EMPTY,
-			GridSpace::EMPTY,
-			GridSpace::EMPTY,
-			GridSpace::EMPTY,
-		},
-		{
-			// 6
-			GridSpace::EMPTY,
-			GridSpace::EMPTY,
-			GridSpace::EMPTY,
-			GridSpace::EMPTY,
-			GridSpace::EMPTY,
-			GridSpace::EMPTY,
-			GridSpace::EMPTY,
-			GridSpace::EMPTY,
-			GridSpace::EMPTY,
-			GridSpace::EMPTY,
-		}
-	};
-
-	std::vector<std::vector<GridSpace>> level_2 = {
-	{
-			// 1
-			GridSpace::OBSTACLE,
-			GridSpace::OBSTACLE,
-			GridSpace::EMPTY,
-			GridSpace::EMPTY,
-			GridSpace::EMPTY,
-			GridSpace::OBSTACLE,
-			GridSpace::EMPTY,
-			GridSpace::EMPTY,
-			GridSpace::EMPTY,
-			GridSpace::OBSTACLE
-		},
-		{
-			// 2
-			GridSpace::EMPTY,
-			GridSpace::EMPTY,
-			GridSpace::EMPTY,
-			GridSpace::OBSTACLE,
-			GridSpace::EMPTY,
-			GridSpace::OBSTACLE,
-			GridSpace::EMPTY,
-			GridSpace::OBSTACLE,
-			GridSpace::EMPTY,
-			GridSpace::OBSTACLE
-		},
-		{
-			// 3
-			GridSpace::EMPTY,
-			GridSpace::OBSTACLE,
-			GridSpace::OBSTACLE,
-			GridSpace::OBSTACLE,
-			GridSpace::EMPTY,
-			GridSpace::OBSTACLE,
-			GridSpace::EMPTY,
-			GridSpace::OBSTACLE,
-			GridSpace::EMPTY,
-			GridSpace::OBSTACLE,
-		},
-		{
-			// 4
-			GridSpace::EMPTY,
-			GridSpace::EMPTY,
-			GridSpace::EMPTY,
-			GridSpace::OBSTACLE,
-			GridSpace::EMPTY,
-			GridSpace::OBSTACLE,
-			GridSpace::EMPTY,
-			GridSpace::OBSTACLE,
-			GridSpace::EMPTY,
-			GridSpace::GOAL
-		},
-		{
-			// 5
-			GridSpace::OBSTACLE,
-			GridSpace::OBSTACLE,
-			GridSpace::EMPTY,
-			GridSpace::OBSTACLE,
-			GridSpace::EMPTY,
-			GridSpace::OBSTACLE,
-			GridSpace::EMPTY,
-			GridSpace::OBSTACLE,
-			GridSpace::EMPTY,
-			GridSpace::OBSTACLE,
-		},
-		{
-			// 6
-			GridSpace::EMPTY,
-			GridSpace::EMPTY,
-			GridSpace::EMPTY,
-			GridSpace::OBSTACLE,
-			GridSpace::EMPTY,
-			GridSpace::EMPTY,
-			GridSpace::EMPTY,
-			GridSpace::OBSTACLE,
-			GridSpace::EMPTY,
-			GridSpace::OBSTACLE,
-		}
-	};
-
-	levels.push_back(Level(level_1));
-	levels.push_back(Level(level_2));
+	levels.push_back(LevelData::GetLevel1());
+	levels.push_back(LevelData::GetLevel2());
+	levels.push_back(LevelData::GetLevel3());
+	levels.push_back(LevelData::GetLevel4());
+	levels.push_back(LevelData::GetLevel5());
+	levels.push_back(LevelData::GetLevel6());
+	levels.push_back(LevelData::GetLevel7());
+	levels.push_back(LevelData::GetLevel8());
+	levels.push_back(LevelData::GetLevel9());
+	levels.push_back(LevelData::GetLevel10());
 }

@@ -134,6 +134,7 @@
     <ClCompile Include="core.cpp" />
     <ClCompile Include="game.cpp" />
     <ClCompile Include="level.cpp" />
+    <ClCompile Include="levelData.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\..\Documents\SDL\SDL-release-3.2.20\VisualC\SDL\SDL.vcxproj">
@@ -143,6 +144,7 @@
   <ItemGroup>
     <ClInclude Include="game.hpp" />
     <ClInclude Include="level.hpp" />
+    <ClInclude Include="levelData.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
