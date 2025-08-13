@@ -56,6 +56,11 @@ static GameStats final_game_stats;
 static bool in_game_summary = false;
 static Uint64 still_game_summary_start_time;
 
+// variables used for the new record entry screen
+static bool new_record_set = false;
+static bool in_record_entry = false;
+static Uint64 record_entry_start_time;
+
 // variables used for the game menu
 
 static bool in_game_menu = true;
@@ -268,7 +273,12 @@ void activateWinningAnimation() {
     winning_time_in_level = SDL_GetTicks() - level_start_time;
 
     // set the winning time for the level in the game data
-    game.SetCurrentLevelTime(winning_time_in_level );
+    game.SetCurrentLevelTime(winning_time_in_level);
+}
+
+void activateNewRecordScreen() {
+    in_game_summary = false;
+    in_record_entry = true;
 }
 
 void activateMenuScreen() {
@@ -312,7 +322,10 @@ void handleGameInput(SDL_Event* event) {
 }
 
 void handleGameSummaryInput(SDL_Event* event) {
-    if(event->key.scancode == SDL_SCANCODE_RETURN) { activateMenuScreen(); }
+    if(event->key.scancode == SDL_SCANCODE_RETURN) { 
+        if (new_record_set) { activateNewRecordScreen(); }
+        else { activateMenuScreen(); }
+    }
 }
 
 void incrementMenuOption() {
@@ -544,6 +557,7 @@ void executeWinningAnimation() {
         // update the game data fow the game summary
         if (!game.IncrementCurrentLevel()) {
             final_game_stats = game.GetLevelStats();
+            new_record_set = game.WasRecordSet();
             summary_animation_start_time = SDL_GetTicks();
             in_game_summary_animation = true;
         }

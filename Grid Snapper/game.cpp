@@ -115,7 +115,7 @@ GameStats Game::GetLevelStats() {
 
 void Game::ResetGame() {
 	pos = { 0, 5 };
-	current_level = 0;
+	current_level = 9;
 
 	// reset all game stats
 	current_game_stats.deaths = 0;
@@ -130,6 +130,13 @@ void Game::SaveGame() {
 	for (auto& record : top_times) {
 		save_file << record.record_holder << " " << record.time << std::endl;
 	}
+}
+
+bool Game::WasRecordSet() {
+	for (auto& record : top_times) {
+		if (current_game_stats.total_time < record.time) { return true; };
+	}
+	return false;
 }
 
 // this hard code the level data for now, it will manually set the matrices in the level objects

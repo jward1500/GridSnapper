@@ -61,6 +61,8 @@ public:
 
 	void SaveGame();
 
+	bool WasRecordSet();
+
 private:
 	std::vector<Level> levels;
 	std::vector<Record> top_times;
