@@ -43,7 +43,7 @@ static Uint64 winning_animation_start_time;
 static Uint64 winning_time_in_level;
 
 // variables used for level loop UI
-static bool in_game = true;
+static bool in_game = false;
 static Game game;
 static Uint64 level_start_time;
 
@@ -51,6 +51,20 @@ static Uint64 level_start_time;
 static bool in_game_summary_animation = false;
 static Uint64 summary_animation_start_time;
 static GameStats final_game_stats;
+
+// variables used for the still game summary
+static bool in_game_summary = true;
+static Uint64 still_game_summary_start_time;
+
+// variables used for the game menu
+
+static bool in_game_menu = true;
+enum class MenuOption {
+    PLAY,
+    SCORES,
+    QUIT
+};
+static MenuOption selected_choice = MenuOption::PLAY;
 
 
 /*---------------------------------------------*/
@@ -83,6 +97,37 @@ static int o_texture_height = 0;
 static SDL_Texture* d_texture = NULL;
 static int d_texture_width = 0;
 static int d_texture_height = 0;
+
+// snap textures
+static SDL_Texture* s_base_texture = NULL;
+static int s_base_texture_width = 0;
+static int s_base_texture_height = 0;
+
+static SDL_Texture* s_speak_texture = NULL;
+static int s_speak_texture_width = 0;
+static int s_speak_texture_height = 0;
+
+static SDL_Texture* s_base_x2_texture = NULL;
+static int s_base_x2_texture_width = 0;
+static int s_base_x2_texture_height = 0;
+
+static SDL_Texture* s_speak_x2_texture = NULL;
+static int s_speak_x2_texture_width = 0;
+static int s_speak_x2_texture_height = 0;
+
+// croc texture
+static SDL_Texture* c_texture = NULL;
+static int c_texture_width = 0;
+static int c_texture_height = 0;
+
+static SDL_Texture* c_x2_texture = NULL;
+static int c_x2_texture_width = 0;
+static int c_x2_texture_height = 0;
+
+// main menu box texture
+static SDL_Texture* m_texture = NULL;
+static int m_texture_width = 0;
+static int m_texture_height = 0;
 
 /*---------------------------------------------*/
 
@@ -162,6 +207,15 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
     if (!load_texture_from_BMP("resources/goal.bmp", g_texture, g_texture_width, g_texture_height)) { return SDL_APP_FAILURE; }
     if (!load_texture_from_BMP("resources/obstacle.bmp", o_texture, o_texture_width, o_texture_height)) { return SDL_APP_FAILURE; }
     if (!load_texture_from_BMP("resources/die.bmp", d_texture, d_texture_width, d_texture_height)) { return SDL_APP_FAILURE; }
+    if (!load_texture_from_BMP("resources/snap.bmp", s_base_texture, s_base_texture_width, s_base_texture_height)) { return SDL_APP_FAILURE; }
+    if (!load_texture_from_BMP("resources/snap_speak.bmp", s_speak_texture, s_speak_texture_width, s_speak_texture_height)) { return SDL_APP_FAILURE; }
+    if (!load_texture_from_BMP("resources/snap_x2.bmp", s_base_x2_texture, s_base_x2_texture_width, s_base_x2_texture_height)) { return SDL_APP_FAILURE; }
+    if (!load_texture_from_BMP("resources/snap_speak_x2.bmp", s_speak_x2_texture, s_speak_x2_texture_width, s_speak_x2_texture_height)) { return SDL_APP_FAILURE; }
+    if (!load_texture_from_BMP("resources/croc.bmp", c_texture, c_texture_width, c_texture_height)) { return SDL_APP_FAILURE; }
+    if (!load_texture_from_BMP("resources/croc_x2.bmp", c_x2_texture, c_x2_texture_width, c_x2_texture_height)) { return SDL_APP_FAILURE; }
+    if (!load_texture_from_BMP("resources/main_menu_box.bmp", m_texture, m_texture_width, m_texture_height)) { return SDL_APP_FAILURE; }
+
+
 
     // this logic will change
     startLevel();
@@ -217,6 +271,11 @@ void activateWinningAnimation() {
     game.SetCurrentLevelTime(winning_time_in_level );
 }
 
+void activateMenuScreen() {
+    in_game_summary = false;
+    in_game_menu = true;
+}
+
 // handle all keyboard inputs when user is in a game
 void handleGameInput(SDL_Event* event) {
 
@@ -252,6 +311,25 @@ void handleGameInput(SDL_Event* event) {
     }
 }
 
+void handleGameSummaryInput(SDL_Event* event) {
+    if(event->key.scancode == SDL_SCANCODE_RETURN) { activateMenuScreen(); }
+}
+
+void incrementMenuOption() {
+    if (selected_choice == MenuOption::SCORES) { selected_choice = MenuOption::PLAY; }
+    else if (selected_choice == MenuOption::QUIT) { selected_choice = MenuOption::SCORES; }
+}
+
+void decrementMenuOption() {
+    if (selected_choice == MenuOption::PLAY) { selected_choice = MenuOption::SCORES; }
+    else if (selected_choice == MenuOption::SCORES) { selected_choice = MenuOption::QUIT; }
+}
+
+void handleGameMenuInput(SDL_Event* event) {
+    if (event->key.scancode == SDL_SCANCODE_UP) { incrementMenuOption(); }
+    else if (event->key.scancode == SDL_SCANCODE_DOWN) { decrementMenuOption(); }
+}
+
 /* This function runs when a new event (mouse input, keypresses, etc) occurs. */
 SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event)
 {
@@ -261,6 +339,8 @@ SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event)
 
     if (event->type == SDL_EVENT_KEY_DOWN) {
         if (in_game) { handleGameInput(event); }
+        if (in_game_summary) { handleGameSummaryInput(event); }
+        if (in_game_menu) { handleGameMenuInput(event); }
     }
 
     return SDL_APP_CONTINUE;  /* carry on with the program! */
@@ -504,12 +584,13 @@ void executeGameSummaryAnimation() {
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE); // set color to white
 
     // check to see if summary animation timer is up
-    if (current_animation_time > 6000) {
-        // TODO: Update Game State
-        drawSummaryTitleText();
-        drawDeathResultText();
-        drawLevelTimes(10);
-        drawTotalTime(true);
+    if (current_animation_time >= 7000) {
+
+        // update game state
+        in_game_summary_animation = false;
+        in_game_summary = true;
+        still_game_summary_start_time = SDL_GetTicks();
+        return;
     }
 
     // black screen for 1 second
@@ -582,6 +663,54 @@ void executeGameSummaryAnimation() {
         drawLevelTimes(10);
         drawTotalTime(false);
     }
+    else if (current_animation_time < 7000) {
+        drawSummaryTitleText();
+        drawDeathResultText();
+        drawLevelTimes(10);
+        drawTotalTime(true);
+    }
+}
+
+void drawEnterToContinueInfo() {
+    Uint32 current_animation_time = SDL_GetTicks() - still_game_summary_start_time;
+
+    // pulse in and out every 2 seconds
+    if ((current_animation_time / 2000) % 2) {
+        drawText(345.0, 850.0, 2.0, 1.0, "Press [ENTER] to return to menu.");
+    }
+}
+
+void drawGameSummaryUI() {
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE); // set color to white
+
+    drawSummaryTitleText();
+    drawDeathResultText();
+    drawLevelTimes(10);
+    drawTotalTime(true);
+    drawEnterToContinueInfo();
+}
+
+void drawGameMenu() {
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE); // set color to white
+
+    drawText(300.0, 100.0, 6.0, 1.0, "GRID SNAPPER");
+    drawSprite(250.0, 175.0, s_base_x2_texture, s_base_x2_texture_width, s_base_x2_texture_height);
+    drawSprite(250.0, 375.0, m_texture, m_texture_width, m_texture_height);
+
+    // draw menu option text
+    if(selected_choice == MenuOption::PLAY) { SDL_SetRenderDrawColor(renderer, 0, 255, 0, SDL_ALPHA_OPAQUE); }
+    drawText(270.0, 490, 2.0, 1.0, "> Play Game");
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
+
+    if(selected_choice == MenuOption::SCORES) { SDL_SetRenderDrawColor(renderer, 0, 255, 0, SDL_ALPHA_OPAQUE); }
+    drawText(270.0, 610, 2.0, 1.0, "> View High Scores");
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
+
+    if(selected_choice == MenuOption::QUIT) { SDL_SetRenderDrawColor(renderer, 0, 255, 0, SDL_ALPHA_OPAQUE); }
+    drawText(270.0, 730, 2.0, 1.0, "> Quit Game");
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
+
+    drawSprite(825.0, 700.0, c_x2_texture, c_x2_texture_width, c_x2_texture_height);
 }
 
 
@@ -592,7 +721,10 @@ SDL_AppResult SDL_AppIterate(void* appstate)
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);  /* black, full alpha */
     SDL_RenderClear(renderer);  /* start with a blank canvas. */
 
-    if (in_game) {
+    if (in_game_menu) {
+        drawGameMenu();
+    }
+    else if (in_game) {
         /* draw sprites */
         drawBackgroundSprite();
         drawPlayerSprite();
@@ -627,6 +759,9 @@ SDL_AppResult SDL_AppIterate(void* appstate)
     }
     else if (in_game_summary_animation) {
         executeGameSummaryAnimation();
+    }
+    else if (in_game_summary) {
+        drawGameSummaryUI();
     }
 
     SDL_RenderPresent(renderer);  /* put it all on the screen! */
