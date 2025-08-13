@@ -2,14 +2,17 @@
 #include "levelData.hpp"
 
 #include <iostream>
-using namespace std;
 
 using std::vector;
+using std::string;
 
 Game::Game() {
 	// always start player in bottom-left corner
 	pos = { 0, 5 };
 	current_level = 0;
+
+	// open the save file (save file should be here)
+	save_file.open("save_file.txt");
 
 	pullTimeRecords();
 	setLevelData();
@@ -21,11 +24,21 @@ Game::Game() {
 	}
 }
 
-// later, this function will attempt to pull old records from the persistent data
-// for now, it just initializes them to 0 ms
+Game::~Game() {
+	save_file.close();
+}
+
 void Game::pullTimeRecords() {
-	for (int i = 0; i < top_times.size(); ++i) {
-		top_times.push_back(0);
+	for (int i = 0; i < 5; ++i) {
+		std::string record_holder;
+		uint64_t time;
+		save_file >> record_holder >> time;
+		top_times.push_back({record_holder, time});
+	}
+
+	// DEBUG
+	for (auto& record : top_times) {
+		std::cout << record.record_holder << " " << record.time << std::endl;
 	}
 }
 
@@ -98,6 +111,25 @@ void Game::SetCurrentLevelTime(uint64_t t) {
 
 GameStats Game::GetLevelStats() {
 	return current_game_stats;
+}
+
+void Game::ResetGame() {
+	pos = { 0, 5 };
+	current_level = 0;
+
+	// reset all game stats
+	current_game_stats.deaths = 0;
+	for (int i = 0; i < current_game_stats.level_times.size(); ++i) {
+		current_game_stats.level_times[i] = 0;
+	}
+	current_game_stats.total_time = 0;
+}
+
+void Game::SaveGame() {
+	// overwrite save data with top times data structure
+	for (auto& record : top_times) {
+		save_file << record.record_holder << " " << record.time << std::endl;
+	}
 }
 
 // this hard code the level data for now, it will manually set the matrices in the level objects

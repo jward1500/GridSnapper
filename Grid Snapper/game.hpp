@@ -2,12 +2,18 @@
 
 #include "level.hpp"
 #include <vector>
+#include <fstream>
 
 // dynamic struct representing the player's game state
 struct GameStats {
 	int deaths = 0;
 	std::vector<uint32_t> level_times;
 	uint32_t total_time;
+};
+
+struct Record {
+	std::string record_holder = "Joe Mamma";
+	uint64_t time = 0;
 };
 
 enum class MoveDirection {
@@ -26,6 +32,7 @@ enum class MoveResult {
 class Game {
 public:
 	Game();
+	~Game();
 	MoveResult Move(MoveDirection dir);
 
 	// get the grid space on the current level
@@ -50,12 +57,17 @@ public:
 	// assumes the game is finished
 	GameStats GetLevelStats();
 
+	void ResetGame();
+
+	void SaveGame();
+
 private:
 	std::vector<Level> levels;
-	std::vector<uint32_t> top_times;
+	std::vector<Record> top_times;
 	GameStats current_game_stats;
 	Pos pos;
 	int current_level;
+	std::fstream save_file;
 
 	// helper functions
 	void pullTimeRecords();

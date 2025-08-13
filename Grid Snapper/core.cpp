@@ -53,7 +53,7 @@ static Uint64 summary_animation_start_time;
 static GameStats final_game_stats;
 
 // variables used for the still game summary
-static bool in_game_summary = true;
+static bool in_game_summary = false;
 static Uint64 still_game_summary_start_time;
 
 // variables used for the game menu
@@ -325,9 +325,16 @@ void decrementMenuOption() {
     else if (selected_choice == MenuOption::SCORES) { selected_choice = MenuOption::QUIT; }
 }
 
+void activateGame() {
+    game.ResetGame();
+    in_game_menu = false;
+    in_game = true;
+}
+
 void handleGameMenuInput(SDL_Event* event) {
     if (event->key.scancode == SDL_SCANCODE_UP) { incrementMenuOption(); }
     else if (event->key.scancode == SDL_SCANCODE_DOWN) { decrementMenuOption(); }
+    else if (event->key.scancode == SDL_SCANCODE_RETURN) { activateGame(); }
 }
 
 /* This function runs when a new event (mouse input, keypresses, etc) occurs. */
@@ -339,8 +346,8 @@ SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event)
 
     if (event->type == SDL_EVENT_KEY_DOWN) {
         if (in_game) { handleGameInput(event); }
-        if (in_game_summary) { handleGameSummaryInput(event); }
-        if (in_game_menu) { handleGameMenuInput(event); }
+        else if (in_game_summary) { handleGameSummaryInput(event); }
+        else if (in_game_menu) { handleGameMenuInput(event); }
     }
 
     return SDL_APP_CONTINUE;  /* carry on with the program! */
