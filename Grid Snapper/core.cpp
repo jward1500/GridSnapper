@@ -60,6 +60,9 @@ static Uint64 still_game_summary_start_time;
 static bool new_record_set = false;
 static bool in_record_entry = false;
 static Uint64 record_entry_start_time;
+constexpr int PLAYER_NAME_MAX_LENGTH = 10;
+static int current_player_letter = 0;
+static string player_name = "A";
 
 // variables used for the game menu
 
@@ -220,7 +223,8 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
     if (!load_texture_from_BMP("resources/croc_x2.bmp", c_x2_texture, c_x2_texture_width, c_x2_texture_height)) { return SDL_APP_FAILURE; }
     if (!load_texture_from_BMP("resources/main_menu_box.bmp", m_texture, m_texture_width, m_texture_height)) { return SDL_APP_FAILURE; }
 
-
+    // set the player name length string
+    player_name.resize(PLAYER_NAME_MAX_LENGTH);
 
     // this logic will change
     startLevel();
@@ -350,6 +354,54 @@ void handleGameMenuInput(SDL_Event* event) {
     else if (event->key.scancode == SDL_SCANCODE_RETURN) { activateGame(); }
 }
 
+void incrementCurrentPlayerLetter() {
+    if (player_name[current_player_letter] + 1 > 'Z') {
+        player_name[current_player_letter] = 'A';
+    }
+    else {
+        ++player_name[current_player_letter];
+    }
+}
+
+void decrementCurrentPlayerLetter() {
+    if (player_name[current_player_letter] - 1 < 'A') {
+        player_name[current_player_letter] = 'Z';
+    }
+    else {
+        --player_name[current_player_letter];
+    }
+}
+
+void nextPlayerNameLetter() {
+    ++current_player_letter;
+    if (current_player_letter < PLAYER_NAME_MAX_LENGTH) {
+        player_name[current_player_letter] = 'A';
+    }
+}
+
+void handleRecordEntryInput(SDL_Event* event) {
+
+    if (event->key.scancode == SDL_SCANCODE_RETURN || current_player_letter >= PLAYER_NAME_MAX_LENGTH) {
+        
+        // handle name submission and record saving
+        game.InsertNewRecord(player_name);
+        game.SaveGame();
+        in_record_entry = false;
+        in_game_menu = true;
+        return;
+    }
+    
+    if (event->key.scancode == SDL_SCANCODE_UP) {
+        incrementCurrentPlayerLetter();
+    }
+    else if (event->key.scancode == SDL_SCANCODE_DOWN) {
+        decrementCurrentPlayerLetter();
+    }
+    else if (event->key.scancode == SDL_SCANCODE_RIGHT) {
+        nextPlayerNameLetter();
+    }
+}
+
 /* This function runs when a new event (mouse input, keypresses, etc) occurs. */
 SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event)
 {
@@ -361,13 +413,14 @@ SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event)
         if (in_game) { handleGameInput(event); }
         else if (in_game_summary) { handleGameSummaryInput(event); }
         else if (in_game_menu) { handleGameMenuInput(event); }
+        else if (in_record_entry) { handleRecordEntryInput(event); }
     }
 
     return SDL_APP_CONTINUE;  /* carry on with the program! */
 }
 
 // general purpose function to convert a time in miliseconds to a string in seconds
-string formatMilisecondsString(Uint64 t) {
+string formatMillisecondsString(Uint64 t) {
 
     std::stringstream ss;
     int seconds = t / 1000;
@@ -488,7 +541,7 @@ void drawTimer() {
         time_string = "59:99";
     }
     else {
-        time_string = formatMilisecondsString(time_elapsed_ms);
+        time_string = formatMillisecondsString(time_elapsed_ms);
     }
 
     // draw the clock text
@@ -586,7 +639,7 @@ void drawLevelTimes(int num_levels) {
         std::stringstream ss;
         Uint64 level_time_ms = final_game_stats.level_times[i];
 
-        ss << "Level " << i + 1 << ": " << formatMilisecondsString(level_time_ms);
+        ss << "Level " << i + 1 << ": " << formatMillisecondsString(level_time_ms);
         drawText(300.0, 275.0 + (i * 45.0), 2.0, 1.0, ss.str());
     }
 }
@@ -594,7 +647,7 @@ void drawLevelTimes(int num_levels) {
 void drawTotalTime(bool should_display_time) {
     std::stringstream ss;
     ss << "TOTAL TIME: ";
-    if (should_display_time) { ss << formatMilisecondsString(final_game_stats.total_time); }
+    if (should_display_time) { ss << formatMillisecondsString(final_game_stats.total_time); }
     drawText(300.0, 750.0, 3.0, 1.0, ss.str());
 }
 
@@ -734,6 +787,16 @@ void drawGameMenu() {
     drawSprite(825.0, 700.0, c_x2_texture, c_x2_texture_width, c_x2_texture_height);
 }
 
+void drawRecordEntryUI() {
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE); // set color to white
+
+    Uint32 current_animation_time = SDL_GetTicks() - record_entry_start_time;
+    string enter_record_text = "ENTER YOUR NAME: " + player_name;
+
+    drawText(362.0, 100.0, 6.0, 1.0, "RECORD SET");
+    drawText(300.0, 445.0, 2.0, 1.0, enter_record_text);
+}
+
 
 /* This function runs once per frame, and is the heart of the program. */
 SDL_AppResult SDL_AppIterate(void* appstate)
@@ -783,6 +846,9 @@ SDL_AppResult SDL_AppIterate(void* appstate)
     }
     else if (in_game_summary) {
         drawGameSummaryUI();
+    }
+    else if (in_record_entry) {
+        drawRecordEntryUI();
     }
 
     SDL_RenderPresent(renderer);  /* put it all on the screen! */

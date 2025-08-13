@@ -11,9 +11,6 @@ Game::Game() {
 	pos = { 0, 5 };
 	current_level = 0;
 
-	// open the save file (save file should be here)
-	save_file.open("save_file.txt");
-
 	pullTimeRecords();
 	setLevelData();
 
@@ -24,17 +21,21 @@ Game::Game() {
 	}
 }
 
-Game::~Game() {
-	save_file.close();
-}
+
 
 void Game::pullTimeRecords() {
+
+	// open the save file (save file should be here)
+	std::ifstream save_file_input("save_file.txt");
+
 	for (int i = 0; i < 5; ++i) {
 		std::string record_holder;
 		uint64_t time;
-		save_file >> record_holder >> time;
+		save_file_input >> record_holder >> time;
 		top_times.push_back({record_holder, time});
 	}
+
+	save_file_input.close();
 
 	// DEBUG
 	for (auto& record : top_times) {
@@ -115,7 +116,7 @@ GameStats Game::GetLevelStats() {
 
 void Game::ResetGame() {
 	pos = { 0, 5 };
-	current_level = 9;
+	current_level = 0;
 
 	// reset all game stats
 	current_game_stats.deaths = 0;
@@ -125,11 +126,23 @@ void Game::ResetGame() {
 	current_game_stats.total_time = 0;
 }
 
+void Game::InsertNewRecord(string const& player_name) {
+	for (auto itr = top_times.begin(); itr < top_times.end(); ++itr) {
+		if (current_game_stats.total_time < itr->time) {
+			top_times.insert(itr, { player_name, current_game_stats.total_time });
+			break;
+		}
+	}
+	top_times.resize(5);
+}
+
 void Game::SaveGame() {
 	// overwrite save data with top times data structure
+	std::ofstream save_file_output("save_file.txt", std::ios::trunc);
 	for (auto& record : top_times) {
-		save_file << record.record_holder << " " << record.time << std::endl;
+		save_file_output << record.record_holder << " " << record.time << std::endl;
 	}
+	save_file_output.close();
 }
 
 bool Game::WasRecordSet() {

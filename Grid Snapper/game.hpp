@@ -32,7 +32,6 @@ enum class MoveResult {
 class Game {
 public:
 	Game();
-	~Game();
 	MoveResult Move(MoveDirection dir);
 
 	// get the grid space on the current level
@@ -59,8 +58,12 @@ public:
 
 	void ResetGame();
 
+	void InsertNewRecord(std::string const& player_name);
+
 	void SaveGame();
 
+	/* to be called after all level times are set and the total time is the full time. Simply returns true if 
+		the total time is less than any of the records in the save file*/ 
 	bool WasRecordSet();
 
 private:
@@ -69,7 +72,6 @@ private:
 	GameStats current_game_stats;
 	Pos pos;
 	int current_level;
-	std::fstream save_file;
 
 	// helper functions
 	void pullTimeRecords();
