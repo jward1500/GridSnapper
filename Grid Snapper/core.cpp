@@ -74,6 +74,9 @@ enum class MenuOption {
 };
 static MenuOption selected_choice = MenuOption::PLAY;
 
+// variables used for high score screen
+static bool in_high_scores = false;
+
 
 /*---------------------------------------------*/
 
@@ -136,6 +139,11 @@ static int c_x2_texture_height = 0;
 static SDL_Texture* m_texture = NULL;
 static int m_texture_width = 0;
 static int m_texture_height = 0;
+
+// new record trophy texture
+static SDL_Texture* t_texture = NULL;
+static int t_texture_width = 0;
+static int t_texture_height = 0;
 
 /*---------------------------------------------*/
 
@@ -222,6 +230,8 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
     if (!load_texture_from_BMP("resources/croc.bmp", c_texture, c_texture_width, c_texture_height)) { return SDL_APP_FAILURE; }
     if (!load_texture_from_BMP("resources/croc_x2.bmp", c_x2_texture, c_x2_texture_width, c_x2_texture_height)) { return SDL_APP_FAILURE; }
     if (!load_texture_from_BMP("resources/main_menu_box.bmp", m_texture, m_texture_width, m_texture_height)) { return SDL_APP_FAILURE; }
+    if (!load_texture_from_BMP("resources/new_record.bmp", t_texture, t_texture_width, t_texture_height)) { return SDL_APP_FAILURE; }
+
 
     // set the player name length string
     player_name.resize(PLAYER_NAME_MAX_LENGTH);
@@ -790,11 +800,28 @@ void drawGameMenu() {
 void drawRecordEntryUI() {
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE); // set color to white
 
-    Uint32 current_animation_time = SDL_GetTicks() - record_entry_start_time;
+    Uint32 current_animation_time = SDL_GetTicks() - record_entry_start_time;  
+
     string enter_record_text = "ENTER YOUR NAME: " + player_name;
 
+    // This bit took me 45 minutes to write :P
+    string blinking_underscore;
+    int player_name_whitespace = PLAYER_NAME_MAX_LENGTH - (current_player_letter + 1);
+    blinking_underscore.resize(enter_record_text.size() - player_name_whitespace);
+    for (int i = 0; i < blinking_underscore.size(); ++i) {
+        blinking_underscore[i] = ' ';
+    }
+    blinking_underscore[blinking_underscore.size() - 1] = '_';
+    
+
     drawText(362.0, 100.0, 6.0, 1.0, "RECORD SET");
-    drawText(300.0, 445.0, 2.0, 1.0, enter_record_text);
+    drawSprite(350.0, 200.0, t_texture, t_texture_width, t_texture_height);
+
+    drawText(275.0, 750.0, 1.5, 1.0, "Press [RIGHT] for next character and [ENTER] to submit");
+    if ((current_animation_time / 1000) % 2) {
+        drawText(385.0, 804.0, 2.0, 1.0, blinking_underscore);
+    }
+    drawText(385.0, 800.0, 2.0, 1.0, enter_record_text);
 }
 
 
