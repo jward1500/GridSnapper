@@ -76,7 +76,10 @@ static MenuOption selected_choice = MenuOption::PLAY;
 
 // variables used for high score screen
 static bool in_high_scores = false;
-
+static bool has_beat_snap = false;
+std::vector<Record> top_times;
+static int snap_lines_high_score_index;
+static std::vector<string> snap_lines_high_score;
 
 /*---------------------------------------------*/
 
@@ -144,6 +147,11 @@ static int m_texture_height = 0;
 static SDL_Texture* t_texture = NULL;
 static int t_texture_width = 0;
 static int t_texture_height = 0;
+
+// dialogue box texture
+static SDL_Texture* db_texture = NULL;
+static int db_texture_width = 0;
+static int db_texture_height = 0;
 
 /*---------------------------------------------*/
 
@@ -231,13 +239,23 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
     if (!load_texture_from_BMP("resources/croc_x2.bmp", c_x2_texture, c_x2_texture_width, c_x2_texture_height)) { return SDL_APP_FAILURE; }
     if (!load_texture_from_BMP("resources/main_menu_box.bmp", m_texture, m_texture_width, m_texture_height)) { return SDL_APP_FAILURE; }
     if (!load_texture_from_BMP("resources/new_record.bmp", t_texture, t_texture_width, t_texture_height)) { return SDL_APP_FAILURE; }
+    if (!load_texture_from_BMP("resources/dialogue_box.bmp", db_texture, db_texture_width, db_texture_height)) { return SDL_APP_FAILURE; }
 
-
-    // set the player name length string
-    player_name.resize(PLAYER_NAME_MAX_LENGTH);
-
-    // this logic will change
-    startLevel();
+    snap_lines_high_score = {
+        "No one can beat me.",
+        "Croc can try all he wants...",
+        "I am the best there is.",
+        "Muscle memory is my strength.",
+        "Australia made me strong.",
+        "You can't win.",
+        "That's right, I'm talking to YOU.",
+        "Yeah, YOU.",
+        "I'm better than YOU.",
+        "Checking again won't change anything.",
+        "Checked 11 times...I'm still first.",
+        "Beat me, then we'll talk."
+    };
+    snap_lines_high_score_index = game.GetSnapLinesHighScoreIndex();
 
     return SDL_APP_CONTINUE;  /* carry on with the program! */
 }
@@ -295,7 +313,7 @@ void activateNewRecordScreen() {
     in_record_entry = true;
 }
 
-void activateMenuScreen() {
+void activateMenuScreenFromGameSummary() {
     in_game_summary = false;
     in_game_menu = true;
 }
@@ -338,7 +356,7 @@ void handleGameInput(SDL_Event* event) {
 void handleGameSummaryInput(SDL_Event* event) {
     if(event->key.scancode == SDL_SCANCODE_RETURN) { 
         if (new_record_set) { activateNewRecordScreen(); }
-        else { activateMenuScreen(); }
+        else { activateMenuScreenFromGameSummary(); }
     }
 }
 
@@ -354,14 +372,32 @@ void decrementMenuOption() {
 
 void activateGame() {
     game.ResetGame();
+    level_start_time = SDL_GetTicks();
     in_game_menu = false;
     in_game = true;
+}
+
+void activateHighScores() {
+    in_game_menu = false;
+    in_high_scores = true;
+    game.IncrementSnapLinesHighScoreIndex();
+    snap_lines_high_score_index = game.GetSnapLinesHighScoreIndex();
+    top_times = game.GetTopTimes();
 }
 
 void handleGameMenuInput(SDL_Event* event) {
     if (event->key.scancode == SDL_SCANCODE_UP) { incrementMenuOption(); }
     else if (event->key.scancode == SDL_SCANCODE_DOWN) { decrementMenuOption(); }
-    else if (event->key.scancode == SDL_SCANCODE_RETURN) { activateGame(); }
+    else if (event->key.scancode == SDL_SCANCODE_RETURN) { 
+        switch (selected_choice) {
+        case MenuOption::PLAY:
+            activateGame();
+            break;
+        case MenuOption::SCORES:
+            activateHighScores();
+            break;
+        }
+    }
 }
 
 void incrementCurrentPlayerLetter() {
@@ -385,7 +421,7 @@ void decrementCurrentPlayerLetter() {
 void nextPlayerNameLetter() {
     ++current_player_letter;
     if (current_player_letter < PLAYER_NAME_MAX_LENGTH) {
-        player_name[current_player_letter] = 'A';
+        player_name.push_back('A');
     }
 }
 
@@ -412,6 +448,18 @@ void handleRecordEntryInput(SDL_Event* event) {
     }
 }
 
+void activateMenuScreenFromHighScores() {
+    in_high_scores = false;
+    in_game_menu = true;
+}
+
+void handleHighScoresInput(SDL_Event* event) {
+    if (event->key.scancode == SDL_SCANCODE_RETURN ||
+        event->key.scancode == SDL_SCANCODE_ESCAPE) {
+        activateMenuScreenFromGameSummary();
+    }
+}
+
 /* This function runs when a new event (mouse input, keypresses, etc) occurs. */
 SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event)
 {
@@ -424,6 +472,7 @@ SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event)
         else if (in_game_summary) { handleGameSummaryInput(event); }
         else if (in_game_menu) { handleGameMenuInput(event); }
         else if (in_record_entry) { handleRecordEntryInput(event); }
+        else if (in_high_scores) { handleHighScoresInput(event); }
     }
 
     return SDL_APP_CONTINUE;  /* carry on with the program! */
@@ -804,16 +853,13 @@ void drawRecordEntryUI() {
 
     string enter_record_text = "ENTER YOUR NAME: " + player_name;
 
-    // This bit took me 45 minutes to write :P
     string blinking_underscore;
-    int player_name_whitespace = PLAYER_NAME_MAX_LENGTH - (current_player_letter + 1);
-    blinking_underscore.resize(enter_record_text.size() - player_name_whitespace);
-    for (int i = 0; i < blinking_underscore.size(); ++i) {
+    blinking_underscore.resize(enter_record_text.size());
+    for (int i = 0; i < blinking_underscore.size() - 1; ++i) {
         blinking_underscore[i] = ' ';
     }
     blinking_underscore[blinking_underscore.size() - 1] = '_';
     
-
     drawText(362.0, 100.0, 6.0, 1.0, "RECORD SET");
     drawSprite(350.0, 200.0, t_texture, t_texture_width, t_texture_height);
 
@@ -822,6 +868,29 @@ void drawRecordEntryUI() {
         drawText(385.0, 804.0, 2.0, 1.0, blinking_underscore);
     }
     drawText(385.0, 800.0, 2.0, 1.0, enter_record_text);
+}
+
+void drawHighScoresUI() {
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE); // set color to white
+    
+    if (!has_beat_snap && snap_lines_high_score_index < 12) {
+        drawSprite(100.0, 700.0, s_speak_x2_texture, s_speak_x2_texture_width, s_speak_x2_texture_height);
+        drawSprite(300.0, 650.0, db_texture, db_texture_width, db_texture_height);
+        drawText(370.0, 711.0, 2.0, 1.0, snap_lines_high_score[snap_lines_high_score_index]);
+    }
+    else {
+        drawSprite(750.0, 440.0, t_texture, t_texture_width, t_texture_height);
+        drawSprite(-50.0, 440.0, t_texture, t_texture_width, t_texture_height);
+
+    }
+
+    drawText(204.0, 100.0, 5.0, 1.0, "Snapper Hall of Fame");
+    for (int i = 0; i < top_times.size(); ++i) {
+        std::stringstream ss;
+        ss << (i + 1) << ": " << top_times[i].record_holder << " ----- " << formatMillisecondsString(top_times[i].time) << endl;
+        drawText(395.0, (i * 75.0) + 250.0, 2.0, 1.0, ss.str());
+    }
+
 }
 
 
@@ -876,6 +945,9 @@ SDL_AppResult SDL_AppIterate(void* appstate)
     }
     else if (in_record_entry) {
         drawRecordEntryUI();
+    }
+    else if (in_high_scores) {
+        drawHighScoresUI();
     }
 
     SDL_RenderPresent(renderer);  /* put it all on the screen! */

@@ -62,13 +62,20 @@ public:
 
 	void SaveGame();
 
+	std::vector<Record> GetTopTimes();
+
 	/* to be called after all level times are set and the total time is the full time. Simply returns true if 
 		the total time is less than any of the records in the save file*/ 
 	bool WasRecordSet();
 
+	int GetSnapLinesHighScoreIndex();
+
+	void IncrementSnapLinesHighScoreIndex();
+
 private:
 	std::vector<Level> levels;
 	std::vector<Record> top_times;
+	int snap_lines_high_score_index;
 	GameStats current_game_stats;
 	Pos pos;
 	int current_level;

@@ -35,12 +35,15 @@ void Game::pullTimeRecords() {
 		top_times.push_back({record_holder, time});
 	}
 
+	save_file_input >> snap_lines_high_score_index;
+
 	save_file_input.close();
 
 	// DEBUG
 	for (auto& record : top_times) {
 		std::cout << record.record_holder << " " << record.time << std::endl;
 	}
+	std::cout << snap_lines_high_score_index << std::endl;
 }
 
 MoveResult Game::Move(MoveDirection dir) {
@@ -142,6 +145,7 @@ void Game::SaveGame() {
 	for (auto& record : top_times) {
 		save_file_output << record.record_holder << " " << record.time << std::endl;
 	}
+	save_file_output << snap_lines_high_score_index;
 	save_file_output.close();
 }
 
@@ -150,6 +154,19 @@ bool Game::WasRecordSet() {
 		if (current_game_stats.total_time < record.time) { return true; };
 	}
 	return false;
+}
+
+vector<Record> Game::GetTopTimes() {
+	return top_times;
+}
+
+int Game::GetSnapLinesHighScoreIndex() {
+	return snap_lines_high_score_index;
+}
+
+void Game::IncrementSnapLinesHighScoreIndex() {
+	++snap_lines_high_score_index;
+	SaveGame();
 }
 
 // this hard code the level data for now, it will manually set the matrices in the level objects
