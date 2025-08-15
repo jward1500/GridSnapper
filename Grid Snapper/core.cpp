@@ -24,7 +24,27 @@ using std::endl;
 /* general sdl variables used by everyone */
 static SDL_Window* window = NULL;
 static SDL_Renderer* renderer = NULL;
+static SDL_AudioDeviceID audio_device = 0;
 static SDL_FRect dst_rect;
+
+/* pertaining to audio */
+struct Sound {
+    Uint8* wav_data;
+    Uint32 wav_data_len;
+    SDL_AudioStream* stream;
+};
+
+// once shot sounds
+static Sound menu_change_option;
+
+// continuous sounds
+static Sound menu_music;
+static bool menu_music_playing = false;
+
+static Sound game_music;
+static Sound game_music_2;
+static bool game_music_playing = false;
+
 
 /*---------------------------------------------*/
 
@@ -200,6 +220,60 @@ static bool load_texture_from_BMP(const std::string& relative_file_path, SDL_Tex
     SDL_DestroySurface(surface);  /* done with this, the texture has a copy of the pixels now. */
 }
 
+static bool init_sound(string const& relative_path, Sound* sound)
+{
+    bool retval = false;
+    SDL_AudioSpec spec;
+    string base_path = SDL_GetBasePath();
+    string wav_path = base_path + relative_path;
+   
+    /* Load the .wav file */
+    if (!SDL_LoadWAV(wav_path.c_str(), &spec, &sound->wav_data, &sound->wav_data_len)) {
+        SDL_Log("Couldn't load .wav file: %s", SDL_GetError());
+        return false;
+    }
+
+    /* Create an audio stream. Set the source format to the wav's format (what
+       we'll input), leave the dest format NULL here (it'll change to what the
+       device wants once we bind it). */
+    sound->stream = SDL_CreateAudioStream(&spec, NULL);
+    if (!sound->stream) {
+        SDL_Log("Couldn't create audio stream: %s", SDL_GetError());
+    }
+    else if (!SDL_BindAudioStream(audio_device, sound->stream)) {  /* once bound, it'll start playing when there is data available! */
+        SDL_Log("Failed to bind '%s' stream to device: %s", relative_path.c_str(), SDL_GetError());
+    }
+    else {
+        retval = true;  /* success! */
+    }
+    return retval;
+}
+
+// if a sound is meant to be played once, use this. Designed to be called once as a fire-off event.
+void playSoundOnce(Sound& sound) {
+
+    // If stream is still playing audio, clear it so we restart immediately
+    if (SDL_GetAudioStreamQueued(sound.stream) > 0) {
+        SDL_ClearAudioStream(sound.stream);
+    }
+
+    SDL_PutAudioStreamData(sound.stream, sound.wav_data, (int)sound.wav_data_len);
+}
+
+// if a sound is meant to be continuous, call this. Designed to be called repeatedly, even once per frame.
+void playSoundContinuous(Sound& sound) {
+    if (SDL_GetAudioStreamQueued(sound.stream) < ((int)sound.wav_data_len)) {
+        SDL_PutAudioStreamData(sound.stream, sound.wav_data, (int)sound.wav_data_len);
+    }
+}
+
+// will manually clear all audio streams. Designed to be called once.
+void stopAllSounds() {
+    SDL_ClearAudioStream(menu_music.stream);
+    SDL_ClearAudioStream(game_music.stream);
+    SDL_ClearAudioStream(menu_change_option.stream);
+}
+
 // call this function to start the level timer
 void startLevel() {
     level_start_time = SDL_GetTicks(); // set the level start time to now
@@ -214,7 +288,7 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
     SDL_SetAppMetadata("Grid Snapper", "1.0", "com.game.grid-snapper");
 
     // initialize SDL
-    if (!SDL_Init(SDL_INIT_VIDEO)) {
+    if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO)) {
         SDL_Log("Couldn't initialize SDL: %s", SDL_GetError());
         return SDL_APP_FAILURE;
     }
@@ -256,6 +330,19 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
         "Beat me, then we'll talk."
     };
     snap_lines_high_score_index = game.GetSnapLinesHighScoreIndex();
+
+    /* open the default audio device in whatever format it prefers; our audio streams will adjust to it. */
+    audio_device = SDL_OpenAudioDevice(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, NULL);
+    if (audio_device == 0) {
+        SDL_Log("Couldn't open audio device: %s", SDL_GetError());
+        return SDL_APP_FAILURE;
+    }
+
+    if (!init_sound("resources\\main_menu.wav", &menu_music)) { return SDL_APP_FAILURE; }
+    if (!init_sound("resources\\menu_change_option.wav", &menu_change_option)) { return SDL_APP_FAILURE; }
+    if (!init_sound("resources\\game_music.wav", &game_music)) { return SDL_APP_FAILURE; }
+
+
 
     return SDL_APP_CONTINUE;  /* carry on with the program! */
 }
@@ -361,13 +448,25 @@ void handleGameSummaryInput(SDL_Event* event) {
 }
 
 void incrementMenuOption() {
-    if (selected_choice == MenuOption::SCORES) { selected_choice = MenuOption::PLAY; }
-    else if (selected_choice == MenuOption::QUIT) { selected_choice = MenuOption::SCORES; }
+    if (selected_choice == MenuOption::SCORES) { 
+        selected_choice = MenuOption::PLAY; 
+        playSoundOnce(menu_change_option);
+    }
+    else if (selected_choice == MenuOption::QUIT) { 
+        selected_choice = MenuOption::SCORES; 
+        playSoundOnce(menu_change_option);
+    }
 }
 
 void decrementMenuOption() {
-    if (selected_choice == MenuOption::PLAY) { selected_choice = MenuOption::SCORES; }
-    else if (selected_choice == MenuOption::SCORES) { selected_choice = MenuOption::QUIT; }
+    if (selected_choice == MenuOption::PLAY) { 
+        selected_choice = MenuOption::SCORES; 
+        playSoundOnce(menu_change_option);
+    }
+    else if (selected_choice == MenuOption::SCORES) { 
+        selected_choice = MenuOption::QUIT; 
+        playSoundOnce(menu_change_option);
+    }
 }
 
 void activateGame() {
@@ -666,8 +765,11 @@ void executeWinningAnimation() {
     if (current_animation_time > 2000) {
         in_winning_animation = false;
         
-        // update the game data fow the game summary
         if (!game.IncrementCurrentLevel()) {
+            // stop playing music, transitioning to game summary
+            stopAllSounds();
+
+            // update the game data for the game summary
             final_game_stats = game.GetLevelStats();
             new_record_set = game.WasRecordSet();
             summary_animation_start_time = SDL_GetTicks();
@@ -912,6 +1014,9 @@ SDL_AppResult SDL_AppIterate(void* appstate)
 
         /* draw UI */
         drawUI();
+
+        /* play music */
+        playSoundContinuous(game_music);
     }
     else if (in_death_animation) {
 
@@ -955,9 +1060,21 @@ SDL_AppResult SDL_AppIterate(void* appstate)
     return SDL_APP_CONTINUE;
 }
 
+void closeSound(Sound& sound) {
+    if (sound.stream) {
+        SDL_DestroyAudioStream(sound.stream);
+    }
+    SDL_free(sound.wav_data);
+}
+
 /* This function runs once at shutdown. */
 void SDL_AppQuit(void* appstate, SDL_AppResult result)
 {
+    // close sound variables
+    SDL_CloseAudioDevice(audio_device);
+    closeSound(menu_music);
+    
+
     SDL_DestroyTexture(p_texture);
     SDL_DestroyTexture(bg_texture);
     SDL_DestroyTexture(o_texture);
