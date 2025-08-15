@@ -506,6 +506,7 @@ void decrementMenuOption() {
 }
 
 void activateGame() {
+    stopAllSounds();
     game.ResetGame();
     level_start_time = SDL_GetTicks();
     in_game_menu = false;
@@ -1076,6 +1077,7 @@ SDL_AppResult SDL_AppIterate(void* appstate)
 
     if (in_game_menu) {
         drawGameMenu();
+        playSoundContinuous(menu_music);
     }
     else if (in_game) {
         /* draw sprites */
