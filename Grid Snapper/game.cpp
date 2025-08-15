@@ -144,7 +144,7 @@ void Game::ResetGame() {
 void Game::InsertNewRecord(string const& player_name) {
 
 	// if the total time is better than snap, player has legitimately beat snap
-	if (current_game_stats.total_time < 60000) {
+	if (current_game_stats.total_time < 35000) {
 		has_beat_snap = true;
 		has_cheated_and_beat_snap = false;
 	}
