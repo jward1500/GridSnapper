@@ -36,14 +36,19 @@ struct Sound {
 
 // once shot sounds
 static Sound menu_change_option;
+static Sound menu_select_option;
+static Sound die;
+static Sound win;
+static Sound game_summary_impact_1;
+static Sound game_summary_impact_2;
 
 // continuous sounds
 static Sound menu_music;
-static bool menu_music_playing = false;
+static Sound new_high_score;
 
-static Sound game_music;
-static Sound game_music_2;
-static bool game_music_playing = false;
+constexpr int GAME_PLAYLIST_COUNT = 3;
+static int game_playlist_index = 0;
+static Sound game_music[3];
 
 
 /*---------------------------------------------*/
@@ -71,6 +76,8 @@ static Uint64 level_start_time;
 static bool in_game_summary_animation = false;
 static Uint64 summary_animation_start_time;
 static GameStats final_game_stats;
+static int sound_counter = 0;
+static int prev_sound_counter = 0;
 
 // variables used for the still game summary
 static bool in_game_summary = false;
@@ -249,6 +256,18 @@ static bool init_sound(string const& relative_path, Sound* sound)
     return retval;
 }
 
+// Function found from https://stackoverflow.com/questions/7560114/random-number-c-in-some-range
+int random(int min, int max) //range : [min, max]
+{
+    static bool first = true;
+    if (first)
+    {
+        std::srand(time(NULL)); //seeding for the first time only!
+        first = false;
+    }
+    return min + std::rand() % ((max + 1) - min);
+}
+
 // if a sound is meant to be played once, use this. Designed to be called once as a fire-off event.
 void playSoundOnce(Sound& sound) {
 
@@ -270,8 +289,11 @@ void playSoundContinuous(Sound& sound) {
 // will manually clear all audio streams. Designed to be called once.
 void stopAllSounds() {
     SDL_ClearAudioStream(menu_music.stream);
-    SDL_ClearAudioStream(game_music.stream);
-    SDL_ClearAudioStream(menu_change_option.stream);
+    SDL_ClearAudioStream(new_high_score.stream);
+
+    for (int i = 0; i < GAME_PLAYLIST_COUNT; ++i) {
+        SDL_ClearAudioStream(game_music[i].stream);
+    }
 }
 
 // call this function to start the level timer
@@ -338,11 +360,21 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
         return SDL_APP_FAILURE;
     }
 
+    // load all needed sounds from their files
     if (!init_sound("resources\\main_menu.wav", &menu_music)) { return SDL_APP_FAILURE; }
     if (!init_sound("resources\\menu_change_option.wav", &menu_change_option)) { return SDL_APP_FAILURE; }
-    if (!init_sound("resources\\game_music.wav", &game_music)) { return SDL_APP_FAILURE; }
+    if (!init_sound("resources\\menu_select_option.wav", &menu_select_option)) { return SDL_APP_FAILURE; }
+    if (!init_sound("resources\\die.wav", &die)) { return SDL_APP_FAILURE; }
+    if (!init_sound("resources\\win.wav", &win)) { return SDL_APP_FAILURE; }
+    if (!init_sound("resources\\game_summary_impact_1.wav", &game_summary_impact_1)) { return SDL_APP_FAILURE; }
+    if (!init_sound("resources\\game_summary_impact_2.wav", &game_summary_impact_2)) { return SDL_APP_FAILURE; }
+    if (!init_sound("resources\\game_music_1.wav", &game_music[0])) { return SDL_APP_FAILURE; }
+    if (!init_sound("resources\\game_music_2.wav", &game_music[1])) { return SDL_APP_FAILURE; }
+    if (!init_sound("resources\\game_music_3.wav", &game_music[2])) { return SDL_APP_FAILURE; }
+    if (!init_sound("resources\\new_high_score.wav", &new_high_score)) { return SDL_APP_FAILURE; }
 
-
+    game_playlist_index = random(0, GAME_PLAYLIST_COUNT);
+    std::cout << game_playlist_index;
 
     return SDL_APP_CONTINUE;  /* carry on with the program! */
 }
@@ -379,6 +411,8 @@ void activateDeathAnimation(MoveDirection dir) {
 
     // set death time to how long user has been in the level
     death_time_in_level = SDL_GetTicks() - level_start_time;
+
+    playSoundOnce(die);
 }
 
 void activateWinningAnimation() {
@@ -393,6 +427,8 @@ void activateWinningAnimation() {
 
     // set the winning time for the level in the game data
     game.SetCurrentLevelTime(winning_time_in_level);
+
+    playSoundOnce(win);
 }
 
 void activateNewRecordScreen() {
@@ -488,6 +524,7 @@ void handleGameMenuInput(SDL_Event* event) {
     if (event->key.scancode == SDL_SCANCODE_UP) { incrementMenuOption(); }
     else if (event->key.scancode == SDL_SCANCODE_DOWN) { decrementMenuOption(); }
     else if (event->key.scancode == SDL_SCANCODE_RETURN) { 
+        playSoundOnce(menu_select_option);
         switch (selected_choice) {
         case MenuOption::PLAY:
             activateGame();
@@ -528,6 +565,8 @@ void handleRecordEntryInput(SDL_Event* event) {
 
     if (event->key.scancode == SDL_SCANCODE_RETURN || current_player_letter >= PLAYER_NAME_MAX_LENGTH) {
         
+        stopAllSounds();
+
         // handle name submission and record saving
         game.InsertNewRecord(player_name);
         game.SaveGame();
@@ -538,12 +577,15 @@ void handleRecordEntryInput(SDL_Event* event) {
     
     if (event->key.scancode == SDL_SCANCODE_UP) {
         incrementCurrentPlayerLetter();
+        playSoundOnce(menu_change_option);
     }
     else if (event->key.scancode == SDL_SCANCODE_DOWN) {
         decrementCurrentPlayerLetter();
+        playSoundOnce(menu_change_option);
     }
     else if (event->key.scancode == SDL_SCANCODE_RIGHT) {
         nextPlayerNameLetter();
+        playSoundOnce(menu_select_option);
     }
 }
 
@@ -768,6 +810,8 @@ void executeWinningAnimation() {
         if (!game.IncrementCurrentLevel()) {
             // stop playing music, transitioning to game summary
             stopAllSounds();
+            // new random song for next game
+            game_playlist_index = random(0, GAME_PLAYLIST_COUNT);
 
             // update the game data for the game summary
             final_game_stats = game.GetLevelStats();
@@ -820,6 +864,9 @@ void executeGameSummaryAnimation() {
 
     // check to see if summary animation timer is up
     if (current_animation_time >= 7000) {
+        // reset the sound counters
+        sound_counter = 0;
+        prev_sound_counter = 0;
 
         // update game state
         in_game_summary_animation = false;
@@ -834,75 +881,99 @@ void executeGameSummaryAnimation() {
     }
     // make title text appear after 1 second
     else if (current_animation_time < 1300) {
+        sound_counter = 1;
         drawSummaryTitleText();
     }
     // make the death result text appear
     else if (current_animation_time < 2000) {
+        sound_counter = 2;
         drawSummaryTitleText();
         drawDeathResultText();
     }
     // show each time every quarter of a second
     else if (current_animation_time < 2250) {
+        sound_counter = 3;
         drawSummaryTitleText();
         drawDeathResultText();
         drawLevelTimes(1);
     }
     else if (current_animation_time < 2500) {
+        sound_counter = 4;
         drawSummaryTitleText();
         drawDeathResultText();
         drawLevelTimes(2);
     }
     else if (current_animation_time < 2750) {
+        sound_counter = 5;
         drawSummaryTitleText();
         drawDeathResultText();
         drawLevelTimes(3);
     }
     else if (current_animation_time < 3000) {
+        sound_counter = 6;
         drawSummaryTitleText();
         drawDeathResultText();
         drawLevelTimes(4);
     }
     else if (current_animation_time < 3250) {
+        sound_counter = 7;
         drawSummaryTitleText();
         drawDeathResultText();
         drawLevelTimes(5);
     }
     else if (current_animation_time < 3500) {
+        sound_counter = 8;
         drawSummaryTitleText();
         drawDeathResultText();
         drawLevelTimes(6);
     }
     else if (current_animation_time < 3750) {
+        sound_counter = 9;
         drawSummaryTitleText();
         drawDeathResultText();
         drawLevelTimes(7);
     }
     else if (current_animation_time < 4000) {
+        sound_counter = 10;
         drawSummaryTitleText();
         drawDeathResultText();
         drawLevelTimes(8);
     }
     else if (current_animation_time < 4250) {
+        sound_counter = 11;
         drawSummaryTitleText();
         drawDeathResultText();
         drawLevelTimes(9);
     }
     else if (current_animation_time < 5000) {
+        sound_counter = 12;
         drawSummaryTitleText();
         drawDeathResultText();
         drawLevelTimes(10);
     }
     else if (current_animation_time < 6000) {
+        sound_counter = 13;
         drawSummaryTitleText();
         drawDeathResultText();
         drawLevelTimes(10);
         drawTotalTime(false);
     }
     else if (current_animation_time < 7000) {
+        sound_counter = 14;
         drawSummaryTitleText();
         drawDeathResultText();
         drawLevelTimes(10);
         drawTotalTime(true);
+    }
+
+    if (sound_counter > prev_sound_counter) {
+        if (sound_counter == 14) {
+            playSoundOnce(game_summary_impact_2);
+        }
+        else {
+            playSoundOnce(game_summary_impact_1);
+        }
+        ++prev_sound_counter;
     }
 }
 
@@ -1016,7 +1087,7 @@ SDL_AppResult SDL_AppIterate(void* appstate)
         drawUI();
 
         /* play music */
-        playSoundContinuous(game_music);
+        playSoundContinuous(game_music[game_playlist_index]);
     }
     else if (in_death_animation) {
 
@@ -1050,6 +1121,7 @@ SDL_AppResult SDL_AppIterate(void* appstate)
     }
     else if (in_record_entry) {
         drawRecordEntryUI();
+        playSoundContinuous(new_high_score);
     }
     else if (in_high_scores) {
         drawHighScoresUI();
