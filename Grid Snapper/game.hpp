@@ -72,13 +72,21 @@ public:
 
 	void IncrementSnapLinesHighScoreIndex();
 
+	bool HasCheated();
+
+	bool HasBeatSnap();
+
 private:
 	std::vector<Level> levels;
-	std::vector<Record> top_times;
-	int snap_lines_high_score_index;
 	GameStats current_game_stats;
 	Pos pos;
 	int current_level;
+
+	// persistent data
+	std::vector<Record> top_times;
+	int snap_lines_high_score_index;
+	bool has_beat_snap;
+	bool has_cheated_and_beat_snap;
 
 	// helper functions
 	void pullTimeRecords();

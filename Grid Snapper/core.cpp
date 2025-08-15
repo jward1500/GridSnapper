@@ -103,7 +103,6 @@ static MenuOption selected_choice = MenuOption::PLAY;
 
 // variables used for high score screen
 static bool in_high_scores = false;
-static bool has_beat_snap = false;
 std::vector<Record> top_times;
 static int snap_lines_high_score_index;
 static std::vector<string> snap_lines_high_score;
@@ -373,7 +372,7 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
     if (!init_sound("resources\\game_music_3.wav", &game_music[2])) { return SDL_APP_FAILURE; }
     if (!init_sound("resources\\new_high_score.wav", &new_high_score)) { return SDL_APP_FAILURE; }
 
-    game_playlist_index = random(0, GAME_PLAYLIST_COUNT);
+    game_playlist_index = random(0, GAME_PLAYLIST_COUNT - 1);
     std::cout << game_playlist_index;
 
     return SDL_APP_CONTINUE;  /* carry on with the program! */
@@ -516,7 +515,9 @@ void activateGame() {
 void activateHighScores() {
     in_game_menu = false;
     in_high_scores = true;
-    game.IncrementSnapLinesHighScoreIndex();
+    if (!game.HasCheated()) {
+        game.IncrementSnapLinesHighScoreIndex();
+    }
     snap_lines_high_score_index = game.GetSnapLinesHighScoreIndex();
     top_times = game.GetTopTimes();
 }
@@ -812,7 +813,7 @@ void executeWinningAnimation() {
             // stop playing music, transitioning to game summary
             stopAllSounds();
             // new random song for next game
-            game_playlist_index = random(0, GAME_PLAYLIST_COUNT);
+            game_playlist_index = random(0, GAME_PLAYLIST_COUNT - 1);
 
             // update the game data for the game summary
             final_game_stats = game.GetLevelStats();
@@ -1047,7 +1048,17 @@ void drawRecordEntryUI() {
 void drawHighScoresUI() {
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE); // set color to white
     
-    if (!has_beat_snap && snap_lines_high_score_index < 12) {
+    if (game.HasCheated()) {
+        drawSprite(100.0, 700.0, s_speak_x2_texture, s_speak_x2_texture_width, s_speak_x2_texture_height);
+        drawSprite(300.0, 650.0, db_texture, db_texture_width, db_texture_height);
+        drawText(370.0, 711.0, 1.5, 1.0, "You can't just edit your score and pretend you beat me.");
+    }
+    else if (game.HasBeatSnap()) {
+        drawSprite(100.0, 700.0, s_speak_x2_texture, s_speak_x2_texture_width, s_speak_x2_texture_height);
+        drawSprite(300.0, 650.0, db_texture, db_texture_width, db_texture_height);
+        drawText(370.0, 711.0, 1.3, 1.0, "Okay. I get it. Type 'snap' in the menu if you have the guts.");
+    }
+    else if (snap_lines_high_score_index < 12) {
         drawSprite(100.0, 700.0, s_speak_x2_texture, s_speak_x2_texture_width, s_speak_x2_texture_height);
         drawSprite(300.0, 650.0, db_texture, db_texture_width, db_texture_height);
         drawText(370.0, 711.0, 2.0, 1.0, snap_lines_high_score[snap_lines_high_score_index]);
@@ -1055,7 +1066,6 @@ void drawHighScoresUI() {
     else {
         drawSprite(750.0, 440.0, t_texture, t_texture_width, t_texture_height);
         drawSprite(-50.0, 440.0, t_texture, t_texture_width, t_texture_height);
-
     }
 
     drawText(204.0, 100.0, 5.0, 1.0, "Snapper Hall of Fame");

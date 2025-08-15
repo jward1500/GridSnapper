@@ -37,6 +37,18 @@ void Game::pullTimeRecords() {
 
 	save_file_input >> snap_lines_high_score_index;
 
+	// has the player beat snap legit?
+	save_file_input >> has_beat_snap;
+	
+	// if the player has edited the time but not "beat snap legit"
+	save_file_input >> has_cheated_and_beat_snap;
+	if (top_times[0].record_holder != "SNAP" && !has_beat_snap) {
+		has_cheated_and_beat_snap = true;
+	}
+	else {
+		has_cheated_and_beat_snap = false;
+	}
+
 	save_file_input.close();
 
 	// DEBUG
@@ -130,6 +142,13 @@ void Game::ResetGame() {
 }
 
 void Game::InsertNewRecord(string const& player_name) {
+
+	// if the total time is better than snap, player has legitimately beat snap
+	if (current_game_stats.total_time < 60000) {
+		has_beat_snap = true;
+		has_cheated_and_beat_snap = false;
+	}
+
 	for (auto itr = top_times.begin(); itr < top_times.end(); ++itr) {
 		if (current_game_stats.total_time < itr->time) {
 			top_times.insert(itr, { player_name, current_game_stats.total_time });
@@ -145,7 +164,9 @@ void Game::SaveGame() {
 	for (auto& record : top_times) {
 		save_file_output << record.record_holder << " " << record.time << std::endl;
 	}
-	save_file_output << snap_lines_high_score_index;
+	save_file_output << snap_lines_high_score_index << std::endl;
+	save_file_output << has_beat_snap << std::endl;
+	save_file_output << has_cheated_and_beat_snap << std::endl;
 	save_file_output.close();
 }
 
@@ -167,6 +188,14 @@ int Game::GetSnapLinesHighScoreIndex() {
 void Game::IncrementSnapLinesHighScoreIndex() {
 	++snap_lines_high_score_index;
 	SaveGame();
+}
+
+bool Game::HasCheated() {
+	return has_cheated_and_beat_snap;
+}
+
+bool Game::HasBeatSnap() {
+	return has_beat_snap;
 }
 
 // this hard code the level data for now, it will manually set the matrices in the level objects
