@@ -403,6 +403,10 @@ void activateDeathAnimation(MoveDirection dir) {
         deathX = playerX;
         deathY = playerY + 100.0;
         break;
+    case MoveDirection::STILL:
+        deathX = playerX;
+        deathY = playerY;
+        break;
     }
 
     // set death animation timer start to now
@@ -738,9 +742,14 @@ void drawTimer() {
     }
 
     // freeze and turn red after 1 minute
-    if (time_elapsed_ms >= 59999) {
+    if (time_elapsed_ms >= 9999) {
         SDL_SetRenderDrawColor(renderer, 255, 0, 0, SDL_ALPHA_OPAQUE); // set color to red
-        time_string = "59:99";
+        time_string = "09:99";
+
+        // if the player is in game and it the time surpasses 9999, activate the death animation
+        if (in_game) {
+            activateDeathAnimation(MoveDirection::STILL);
+        }
     }
     else {
         time_string = formatMillisecondsString(time_elapsed_ms);

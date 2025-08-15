@@ -20,7 +20,8 @@ enum class MoveDirection {
 	LEFT,
 	RIGHT,
 	UP,
-	DOWN
+	DOWN,
+	STILL
 };
 
 enum class MoveResult {
