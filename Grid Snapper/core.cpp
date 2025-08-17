@@ -107,6 +107,12 @@ std::vector<Record> top_times;
 static int snap_lines_high_score_index;
 static std::vector<string> snap_lines_high_score;
 
+// variables for hard mode
+constexpr int PREVIOUS_SCANCODES_SIZE = 3;
+SDL_Scancode previous_scancodes[PREVIOUS_SCANCODES_SIZE];
+
+bool in_hard_mode = false;
+
 /*---------------------------------------------*/
 
 // player sprite variables
@@ -154,6 +160,10 @@ static int s_base_x2_texture_height = 0;
 static SDL_Texture* s_speak_x2_texture = NULL;
 static int s_speak_x2_texture_width = 0;
 static int s_speak_x2_texture_height = 0;
+
+static SDL_Texture* s_laugh_x3_texture = NULL;
+static int s_laugh_x3_texture_width = 0;
+static int s_laugh_x3_texture_height = 0;
 
 // croc texture
 static SDL_Texture* c_texture = NULL;
@@ -330,6 +340,7 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
     if (!load_texture_from_BMP("resources/snap_speak.bmp", s_speak_texture, s_speak_texture_width, s_speak_texture_height)) { return SDL_APP_FAILURE; }
     if (!load_texture_from_BMP("resources/snap_x2.bmp", s_base_x2_texture, s_base_x2_texture_width, s_base_x2_texture_height)) { return SDL_APP_FAILURE; }
     if (!load_texture_from_BMP("resources/snap_speak_x2.bmp", s_speak_x2_texture, s_speak_x2_texture_width, s_speak_x2_texture_height)) { return SDL_APP_FAILURE; }
+    if (!load_texture_from_BMP("resources/snap_laugh_x3.bmp", s_laugh_x3_texture, s_laugh_x3_texture_width, s_laugh_x3_texture_height)) { return SDL_APP_FAILURE; }
     if (!load_texture_from_BMP("resources/croc.bmp", c_texture, c_texture_width, c_texture_height)) { return SDL_APP_FAILURE; }
     if (!load_texture_from_BMP("resources/croc_x2.bmp", c_x2_texture, c_x2_texture_width, c_x2_texture_height)) { return SDL_APP_FAILURE; }
     if (!load_texture_from_BMP("resources/main_menu_box.bmp", m_texture, m_texture_width, m_texture_height)) { return SDL_APP_FAILURE; }
@@ -374,6 +385,11 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
 
     game_playlist_index = random(0, GAME_PLAYLIST_COUNT - 1);
     std::cout << game_playlist_index;
+
+    // initialize the previous 3 scancode inputs to something
+    for (int i = 0; i < PREVIOUS_SCANCODES_SIZE; ++i) {
+        previous_scancodes[i] = SDL_SCANCODE_0;
+    }
 
     return SDL_APP_CONTINUE;  /* carry on with the program! */
 }
@@ -526,20 +542,54 @@ void activateHighScores() {
     top_times = game.GetTopTimes();
 }
 
+void flickHardModeSwitch() {
+    in_hard_mode = !in_hard_mode;
+}
+
 void handleGameMenuInput(SDL_Event* event) {
     if (event->key.scancode == SDL_SCANCODE_UP) { incrementMenuOption(); }
     else if (event->key.scancode == SDL_SCANCODE_DOWN) { decrementMenuOption(); }
-    else if (event->key.scancode == SDL_SCANCODE_RETURN) { 
-        playSoundOnce(menu_select_option);
-        switch (selected_choice) {
-        case MenuOption::PLAY:
-            activateGame();
-            break;
-        case MenuOption::SCORES:
-            activateHighScores();
-            break;
+    else if (event->key.scancode == SDL_SCANCODE_RETURN) {
+        if (!in_hard_mode) {
+            playSoundOnce(menu_select_option);
+            switch (selected_choice) {
+            case MenuOption::PLAY:
+                activateGame();
+                break;
+            case MenuOption::SCORES:
+                activateHighScores();
+                break;
+            }
         }
+        else {
+            switch (selected_choice) {
+            case MenuOption::PLAY:
+                playSoundOnce(die);
+                break;
+            case MenuOption::SCORES:
+                playSoundOnce(menu_select_option);
+                activateHighScores();
+                break;
+            case MenuOption::QUIT:
+                playSoundOnce(die);
+                break;
+            }
+        }
+        
     }
+
+    // check for the for the special key pattern
+    if (previous_scancodes[0] == SDL_SCANCODE_S &&
+        previous_scancodes[1] == SDL_SCANCODE_N &&
+        previous_scancodes[2] == SDL_SCANCODE_A &&
+        event->key.scancode == SDL_SCANCODE_P) {
+        flickHardModeSwitch();
+    }
+
+    // update previous scancodes
+    previous_scancodes[0] = previous_scancodes[1];
+    previous_scancodes[1] = previous_scancodes[2];
+    previous_scancodes[2] = event->key.scancode;
 }
 
 void incrementCurrentPlayerLetter() {
@@ -1030,6 +1080,35 @@ void drawGameMenu() {
     drawSprite(825.0, 700.0, c_x2_texture, c_x2_texture_width, c_x2_texture_height);
 }
 
+// some duplicated code from drawGameMenu, repeated for overall readability
+void drawGameMenuHardMode() {
+    SDL_SetRenderDrawColor(renderer, 255, 0, 0, SDL_ALPHA_OPAQUE); // set color to red
+    
+    drawSprite(1000.0, 100.0, c_x2_texture, c_x2_texture_width, c_x2_texture_height);
+    drawText(-50.0, 100.0, 12.0, 1.0, "S N A P  S N A P  S N A P");
+    drawSprite(250.0, 375.0, m_texture, m_texture_width, m_texture_height);
+    drawSprite(800.0, 600.0, s_laugh_x3_texture, s_laugh_x3_texture_width, s_laugh_x3_texture_height);
+
+    // draw menu option text
+    if (selected_choice == MenuOption::PLAY) { SDL_SetRenderDrawColor(renderer, 255, 255, 0, SDL_ALPHA_OPAQUE); }
+    drawText(270.0, 490, 2.0, 1.0, "> Play Game");
+    drawText(265.0, 490, 2.0, 1.0, "-------------");
+    SDL_SetRenderDrawColor(renderer, 255, 0, 0, SDL_ALPHA_OPAQUE);
+
+    if (selected_choice == MenuOption::SCORES) { SDL_SetRenderDrawColor(renderer, 255, 255, 0, SDL_ALPHA_OPAQUE); }
+    drawText(270.0, 610, 2.0, 1.0, "> View High Scores");
+    SDL_SetRenderDrawColor(renderer, 255, 0, 0, SDL_ALPHA_OPAQUE);
+
+    if (selected_choice == MenuOption::QUIT) { SDL_SetRenderDrawColor(renderer, 255, 255, 0, SDL_ALPHA_OPAQUE); }
+    drawText(270.0, 730, 2.0, 1.0, "> Quit Game");
+    drawText(265.0, 730, 2.0, 1.0, "-------------");
+    SDL_SetRenderDrawColor(renderer, 255, 0, 0, SDL_ALPHA_OPAQUE);
+
+    // draw special text
+    drawText(550.0, 550.0, 2.0, 1.0, "Press 'H' if you want your ass kicked XD.");
+
+}
+
 void drawRecordEntryUI() {
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE); // set color to white
 
@@ -1095,7 +1174,7 @@ SDL_AppResult SDL_AppIterate(void* appstate)
     SDL_RenderClear(renderer);  /* start with a blank canvas. */
 
     if (in_game_menu) {
-        drawGameMenu();
+        !in_hard_mode ? drawGameMenu() : drawGameMenuHardMode();
         playSoundContinuous(menu_music);
     }
     else if (in_game) {
