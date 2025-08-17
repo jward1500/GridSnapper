@@ -41,9 +41,11 @@ static Sound die;
 static Sound win;
 static Sound game_summary_impact_1;
 static Sound game_summary_impact_2;
+static Sound static_noise;
 
 // continuous sounds
 static Sound menu_music;
+static Sound menu_music_hard;
 static Sound new_high_score;
 
 constexpr int GAME_PLAYLIST_COUNT = 3;
@@ -110,7 +112,8 @@ static std::vector<string> snap_lines_high_score;
 // variables for hard mode
 constexpr int PREVIOUS_SCANCODES_SIZE = 3;
 SDL_Scancode previous_scancodes[PREVIOUS_SCANCODES_SIZE];
-
+bool in_hard_mode_animation = false;
+static Uint64 hard_mode_animation_start_time;
 bool in_hard_mode = false;
 
 /*---------------------------------------------*/
@@ -188,6 +191,11 @@ static int t_texture_height = 0;
 static SDL_Texture* db_texture = NULL;
 static int db_texture_width = 0;
 static int db_texture_height = 0;
+
+// screen full of tv static texture
+static SDL_Texture* static_texture = NULL;
+static int static_texture_width = 0;
+static int static_texture_height = 0;
 
 /*---------------------------------------------*/
 
@@ -298,6 +306,7 @@ void playSoundContinuous(Sound& sound) {
 // will manually clear all audio streams. Designed to be called once.
 void stopAllSounds() {
     SDL_ClearAudioStream(menu_music.stream);
+    SDL_ClearAudioStream(menu_music_hard.stream);
     SDL_ClearAudioStream(new_high_score.stream);
 
     for (int i = 0; i < GAME_PLAYLIST_COUNT; ++i) {
@@ -346,6 +355,7 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
     if (!load_texture_from_BMP("resources/main_menu_box.bmp", m_texture, m_texture_width, m_texture_height)) { return SDL_APP_FAILURE; }
     if (!load_texture_from_BMP("resources/new_record.bmp", t_texture, t_texture_width, t_texture_height)) { return SDL_APP_FAILURE; }
     if (!load_texture_from_BMP("resources/dialogue_box.bmp", db_texture, db_texture_width, db_texture_height)) { return SDL_APP_FAILURE; }
+    if (!load_texture_from_BMP("resources/static.bmp", static_texture, static_texture_width, static_texture_height)) { return SDL_APP_FAILURE; }
 
     snap_lines_high_score = {
         "No one can beat me.",
@@ -372,6 +382,7 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
 
     // load all needed sounds from their files
     if (!init_sound("resources\\main_menu.wav", &menu_music)) { return SDL_APP_FAILURE; }
+    if (!init_sound("resources\\main_menu_hard_mode.wav", &menu_music_hard)) { return SDL_APP_FAILURE; }
     if (!init_sound("resources\\menu_change_option.wav", &menu_change_option)) { return SDL_APP_FAILURE; }
     if (!init_sound("resources\\menu_select_option.wav", &menu_select_option)) { return SDL_APP_FAILURE; }
     if (!init_sound("resources\\die.wav", &die)) { return SDL_APP_FAILURE; }
@@ -382,6 +393,7 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
     if (!init_sound("resources\\game_music_2.wav", &game_music[1])) { return SDL_APP_FAILURE; }
     if (!init_sound("resources\\game_music_3.wav", &game_music[2])) { return SDL_APP_FAILURE; }
     if (!init_sound("resources\\new_high_score.wav", &new_high_score)) { return SDL_APP_FAILURE; }
+    if (!init_sound("resources\\static.wav", &static_noise)) { return SDL_APP_FAILURE; }
 
     game_playlist_index = random(0, GAME_PLAYLIST_COUNT - 1);
     std::cout << game_playlist_index;
@@ -544,6 +556,14 @@ void activateHighScores() {
 
 void flickHardModeSwitch() {
     in_hard_mode = !in_hard_mode;
+
+    // we want to activate the hard mode animation sequence
+    in_game_menu = false;
+    in_hard_mode_animation = true;
+    hard_mode_animation_start_time = SDL_GetTicks();
+    playSoundOnce(static_noise);
+
+    stopAllSounds();
 }
 
 void handleGameMenuInput(SDL_Event* event) {
@@ -655,7 +675,7 @@ void activateMenuScreenFromHighScores() {
 void handleHighScoresInput(SDL_Event* event) {
     if (event->key.scancode == SDL_SCANCODE_RETURN ||
         event->key.scancode == SDL_SCANCODE_ESCAPE) {
-        activateMenuScreenFromGameSummary();
+        activateMenuScreenFromHighScores();
     }
 }
 
@@ -1167,6 +1187,15 @@ void drawHighScoresUI() {
 
 }
 
+void executeHardModeAnimation() {
+    Uint64 current_animation_time = SDL_GetTicks() - hard_mode_animation_start_time;
+    if (current_animation_time > 930) {
+        in_game_menu = true;
+        return;
+    }
+    drawSprite(0, 0, static_texture, static_texture_width, static_texture_height);
+}
+
 
 /* This function runs once per frame, and is the heart of the program. */
 SDL_AppResult SDL_AppIterate(void* appstate)
@@ -1176,8 +1205,14 @@ SDL_AppResult SDL_AppIterate(void* appstate)
     SDL_RenderClear(renderer);  /* start with a blank canvas. */
 
     if (in_game_menu) {
-        !in_hard_mode ? drawGameMenu() : drawGameMenuHardMode();
-        playSoundContinuous(menu_music);
+        if (!in_hard_mode) {
+            drawGameMenu();
+            playSoundContinuous(menu_music);
+        }
+        else {
+            drawGameMenuHardMode();
+            playSoundContinuous(menu_music_hard);
+        }
     }
     else if (in_game) {
         /* draw sprites */
@@ -1228,6 +1263,9 @@ SDL_AppResult SDL_AppIterate(void* appstate)
     else if (in_high_scores) {
         drawHighScoresUI();
     }
+    else if (in_hard_mode_animation) {
+        executeHardModeAnimation();
+    }
 
     SDL_RenderPresent(renderer);  /* put it all on the screen! */
 
@@ -1251,9 +1289,11 @@ void closeSoundVariables() {
     closeSound(win);
     closeSound(game_summary_impact_1);
     closeSound(game_summary_impact_2);
+    closeSound(static_noise);
 
     // close continuous sounds
     closeSound(menu_music);
+    closeSound(menu_music_hard);
     closeSound(menu_select_option);
     for (int i = 0; i < GAME_PLAYLIST_COUNT; ++i) {
         closeSound(game_music[i]);
