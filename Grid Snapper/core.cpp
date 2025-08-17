@@ -575,7 +575,9 @@ void handleGameMenuInput(SDL_Event* event) {
                 break;
             }
         }
-        
+    }
+    else if(in_hard_mode && event->key.scancode == SDL_SCANCODE_H) {
+        activateGame();
     }
 
     // check for the for the special key pattern
@@ -1084,7 +1086,7 @@ void drawGameMenu() {
 void drawGameMenuHardMode() {
     SDL_SetRenderDrawColor(renderer, 255, 0, 0, SDL_ALPHA_OPAQUE); // set color to red
     
-    drawSprite(1000.0, 100.0, c_x2_texture, c_x2_texture_width, c_x2_texture_height);
+    drawSprite(150.0, 100.0, c_x2_texture, c_x2_texture_width, c_x2_texture_height);
     drawText(-50.0, 100.0, 12.0, 1.0, "S N A P  S N A P  S N A P");
     drawSprite(250.0, 375.0, m_texture, m_texture_width, m_texture_height);
     drawSprite(800.0, 600.0, s_laugh_x3_texture, s_laugh_x3_texture_width, s_laugh_x3_texture_height);
@@ -1239,18 +1241,47 @@ void closeSound(Sound& sound) {
     SDL_free(sound.wav_data);
 }
 
-/* This function runs once at shutdown. */
-void SDL_AppQuit(void* appstate, SDL_AppResult result)
-{
-    // close sound variables
+void closeSoundVariables() {
     SDL_CloseAudioDevice(audio_device);
-    closeSound(menu_music);
-    
 
+    // close short sounds
+    closeSound(menu_change_option);
+    closeSound(menu_select_option);
+    closeSound(die);
+    closeSound(win);
+    closeSound(game_summary_impact_1);
+    closeSound(game_summary_impact_2);
+
+    // close continuous sounds
+    closeSound(menu_music);
+    closeSound(menu_select_option);
+    for (int i = 0; i < GAME_PLAYLIST_COUNT; ++i) {
+        closeSound(game_music[i]);
+    }
+}
+
+void destroyAllTextures() {
     SDL_DestroyTexture(p_texture);
     SDL_DestroyTexture(bg_texture);
     SDL_DestroyTexture(o_texture);
     SDL_DestroyTexture(g_texture);
     SDL_DestroyTexture(d_texture);
+    SDL_DestroyTexture(s_base_texture);
+    SDL_DestroyTexture(s_speak_texture);
+    SDL_DestroyTexture(s_base_x2_texture);
+    SDL_DestroyTexture(s_speak_x2_texture);
+    SDL_DestroyTexture(s_laugh_x3_texture);
+    SDL_DestroyTexture(c_texture);
+    SDL_DestroyTexture(c_x2_texture);
+    SDL_DestroyTexture(m_texture);
+    SDL_DestroyTexture(t_texture);
+    SDL_DestroyTexture(db_texture);
+}
+
+/* This function runs once at shutdown. */
+void SDL_AppQuit(void* appstate, SDL_AppResult result)
+{
+    closeSoundVariables();
+    destroyAllTextures();
     /* SDL will clean up the window/renderer for us. */
 }
