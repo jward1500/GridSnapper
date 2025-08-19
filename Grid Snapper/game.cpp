@@ -59,8 +59,6 @@ void Game::pullTimeRecords() {
 }
 
 MoveResult Game::Move(MoveDirection dir) {
-	Level level = levels[current_level];
-
 	Pos next_pos = pos;
 	switch (dir) {
 	case MoveDirection::LEFT:
@@ -76,12 +74,17 @@ MoveResult Game::Move(MoveDirection dir) {
 		next_pos = { pos.x, pos.y + 1 };
 	}
 
-	GridSpace future_space = level.GetGridSpace(next_pos);
+	GridSpace future_space = levels[current_level].GetGridSpace(next_pos);
 	if (future_space == GridSpace::OBSTACLE) {
 		return MoveResult::DIE;
 	}
 	else if (future_space == GridSpace::GOAL) {
 		return MoveResult::WIN;
+	}
+	else if (future_space == GridSpace::FLIP) {
+		pos = next_pos;
+		levels[current_level].ClearSpace(next_pos);
+		return MoveResult::FLIP;
 	}
 	else {
 		pos = next_pos;
@@ -96,6 +99,7 @@ GridSpace Game::GetGridSpace(Pos pos) {
 
 void Game::ResetCurrentLevel() {
 	pos = { 0 , 5 };
+	levels[current_level].RestoreSpaces();
 }
 
 void Game::IncrementDeathCounter() {

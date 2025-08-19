@@ -43,7 +43,7 @@ Level LevelData::GetLevel1() {
 		},
 		{
 			// 4
-			GridSpace::EMPTY,
+			GridSpace::FLIP,
 			GridSpace::OBSTACLE,
 			GridSpace::OBSTACLE,
 			GridSpace::OBSTACLE,

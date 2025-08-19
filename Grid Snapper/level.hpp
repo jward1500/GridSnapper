@@ -9,7 +9,13 @@ struct Pos {
 enum class GridSpace {
 	EMPTY,
 	OBSTACLE,
-	GOAL
+	GOAL,
+	FLIP
+};
+
+struct DeletedSpace {
+	Pos pos;
+	GridSpace grid_space;
 };
 
 class Level {
@@ -21,6 +27,16 @@ public:
 	// will return the type of space at the given coordinates, if out of bounds, will return OBSTACLE since this is expected
 	GridSpace GetGridSpace(Pos pos);
 
+	// will clear the space back to to EMPTY
+	void ClearSpace(Pos pos);
+
+	// restore all deleted spaces
+	void RestoreSpaces();
+
 private:
 	std::vector<std::vector<GridSpace>> level_grid;
+	std::vector<DeletedSpace> deleted_spaces;
+
+	// determine if a position is in bounds
+	bool inBounds(Pos pos);
 };

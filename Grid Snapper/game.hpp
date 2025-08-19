@@ -27,7 +27,8 @@ enum class MoveDirection {
 enum class MoveResult {
 	SUCCESS,
 	DIE,
-	WIN
+	WIN,
+	FLIP
 };
 
 class Game {

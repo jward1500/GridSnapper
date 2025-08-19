@@ -114,7 +114,9 @@ constexpr int PREVIOUS_SCANCODES_SIZE = 3;
 SDL_Scancode previous_scancodes[PREVIOUS_SCANCODES_SIZE];
 bool in_hard_mode_animation = false;
 static Uint64 hard_mode_animation_start_time;
+
 bool in_hard_mode = false;
+bool in_flip_mode = false;
 
 /*---------------------------------------------*/
 
@@ -196,6 +198,11 @@ static int db_texture_height = 0;
 static SDL_Texture* static_texture = NULL;
 static int static_texture_width = 0;
 static int static_texture_height = 0;
+
+// control flip tile texture
+static SDL_Texture* flip_texture = NULL;
+static int flip_texture_width = 0;
+static int flip_texture_height = 0;
 
 /*---------------------------------------------*/
 
@@ -356,6 +363,9 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
     if (!load_texture_from_BMP("resources/new_record.bmp", t_texture, t_texture_width, t_texture_height)) { return SDL_APP_FAILURE; }
     if (!load_texture_from_BMP("resources/dialogue_box.bmp", db_texture, db_texture_width, db_texture_height)) { return SDL_APP_FAILURE; }
     if (!load_texture_from_BMP("resources/static.bmp", static_texture, static_texture_width, static_texture_height)) { return SDL_APP_FAILURE; }
+    if (!load_texture_from_BMP("resources/control_flip.bmp", flip_texture, flip_texture_width, flip_texture_height)) { return SDL_APP_FAILURE; }
+
+
 
     snap_lines_high_score = {
         "No one can beat me.",
@@ -406,11 +416,23 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
     return SDL_APP_CONTINUE;  /* carry on with the program! */
 }
 
+void flickFlipMode() {
+    in_flip_mode = !in_flip_mode;
+}
+
+void disableFlipMode() {
+    in_flip_mode = false;
+}
+
 // set the death sprite location, mark game state as in_death_animation, set death animation timer
 void activateDeathAnimation(MoveDirection dir) {
 
     // update the game state
     in_game = false;
+
+    // reset all hard mode modifiers
+    disableFlipMode();
+
     in_death_animation = true;
 
     // set death sprite location
@@ -448,6 +470,10 @@ void activateDeathAnimation(MoveDirection dir) {
 
 void activateWinningAnimation() {
     in_game = false;
+
+    // disable in game modifiers for hard mode as well
+    disableFlipMode();
+
     in_winning_animation = true;
 
     // set winning animation timer start to now
@@ -472,13 +498,8 @@ void activateMenuScreenFromGameSummary() {
     in_game_menu = true;
 }
 
-// handle all keyboard inputs when user is in a game
-void handleGameInput(SDL_Event* event) {
-
-    MoveDirection move_direction;
-    MoveResult move_result;
-
-    switch (event->key.scancode) {
+void MoveNormal(SDL_Scancode code, MoveDirection& move_direction, MoveResult& move_result) {
+    switch (code) {
     case SDL_SCANCODE_LEFT:
         move_direction = MoveDirection::LEFT;
         move_result = game.Move(move_direction);
@@ -498,12 +519,54 @@ void handleGameInput(SDL_Event* event) {
     default:
         move_result = MoveResult::SUCCESS;
     }
+}
+
+void MoveFlipped(SDL_Scancode code, MoveDirection& move_direction, MoveResult& move_result) {
+    switch (code) {
+    case SDL_SCANCODE_LEFT:
+        move_direction = MoveDirection::RIGHT;
+        move_result = game.Move(move_direction);
+        break;
+    case SDL_SCANCODE_UP:
+        move_direction = MoveDirection::DOWN;
+        move_result = game.Move(move_direction);
+        break;
+    case SDL_SCANCODE_RIGHT:
+        move_direction = MoveDirection::LEFT;
+        move_result = game.Move(move_direction);
+        break;
+    case SDL_SCANCODE_DOWN:
+        move_direction = MoveDirection::UP;
+        move_result = game.Move(move_direction);
+        break;
+    default:
+        move_result = MoveResult::SUCCESS;
+    }
+}
+
+// handle all keyboard inputs when user is in a game
+void handleGameInput(SDL_Event* event) {
+    MoveDirection move_direction;
+    MoveResult move_result;
+    
+    if (!in_flip_mode) {
+        MoveNormal(event->key.scancode, move_direction, move_result);
+    }
+    else {
+        MoveFlipped(event->key.scancode, move_direction, move_result);
+    }
 
     if (move_result == MoveResult::DIE) {
         activateDeathAnimation(move_direction);
     }
     else if (move_result == MoveResult::WIN) {
         activateWinningAnimation();
+    }
+    // hard mode moves
+    else if (in_hard_mode) {
+        if (move_result == MoveResult::FLIP) {
+            flickFlipMode();
+        }
     }
 }
 
@@ -756,6 +819,12 @@ void drawDeathSprite() {
     drawSprite(deathX, deathY, d_texture, d_texture_width, d_texture_height);
 }
 
+void drawFlipSprite(Pos pos) {
+    float flipX = pos.x * 100 + 100;
+    float flipY = pos.y * 100 + 300;
+    drawSprite(flipX, flipY, flip_texture, flip_texture_width, flip_texture_height);
+}
+
 // use game data to determine where the obstacle and the goal sprites should be drawn
 void drawObstaclesAndGoals() {
     for (int i = 0; i < GRID_WIDTH; ++i) {
@@ -765,10 +834,23 @@ void drawObstaclesAndGoals() {
 
             // we want everything to be green in winning animation
             if (in_winning_animation) {
-                if (current_space == GridSpace::OBSTACLE || current_space == GridSpace::GOAL) { drawGoalSprite(current_pos); }
+                if (current_space == GridSpace::OBSTACLE || 
+                    current_space == GridSpace::GOAL)
+                { 
+                    drawGoalSprite(current_pos); 
+                }
             }
             // otherwise use normal sprites
             else {
+
+                // draw all special tiles in hard mode
+                if (in_hard_mode) {
+                    if (current_space == GridSpace::FLIP) 
+                    { 
+                        drawFlipSprite(current_pos); 
+                    }
+                }
+
                 if (current_space == GridSpace::OBSTACLE) { drawObstacleSprite(current_pos); }
                 else if (current_space == GridSpace::GOAL) { drawGoalSprite(current_pos); }
             }
@@ -1316,6 +1398,8 @@ void destroyAllTextures() {
     SDL_DestroyTexture(m_texture);
     SDL_DestroyTexture(t_texture);
     SDL_DestroyTexture(db_texture);
+    SDL_DestroyTexture(static_texture);
+    SDL_DestroyTexture(flip_texture);
 }
 
 /* This function runs once at shutdown. */
