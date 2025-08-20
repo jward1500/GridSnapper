@@ -47,6 +47,7 @@ static Sound static_noise;
 static Sound menu_music;
 static Sound menu_music_hard;
 static Sound new_high_score;
+static Sound final_boss_music;
 
 constexpr int GAME_PLAYLIST_COUNT = 3;
 static int game_playlist_index = 0;
@@ -204,6 +205,15 @@ static SDL_Texture* flip_texture = NULL;
 static int flip_texture_width = 0;
 static int flip_texture_height = 0;
 
+// hard mode game background textures
+static SDL_Texture* bg_hard_normal_texture = NULL;
+static int bg_hard_normal_texture_width = 0;
+static int bg_hard_normal_texture_height = 0;
+
+static SDL_Texture* bg_hard_taunt_texture = NULL;
+static int bg_hard_taunt_texture_width = 0;
+static int bg_hard_taunt_texture_height = 0;
+
 /*---------------------------------------------*/
 
 /* constants */
@@ -315,6 +325,7 @@ void stopAllSounds() {
     SDL_ClearAudioStream(menu_music.stream);
     SDL_ClearAudioStream(menu_music_hard.stream);
     SDL_ClearAudioStream(new_high_score.stream);
+    SDL_ClearAudioStream(final_boss_music.stream);
 
     for (int i = 0; i < GAME_PLAYLIST_COUNT; ++i) {
         SDL_ClearAudioStream(game_music[i].stream);
@@ -364,8 +375,8 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
     if (!load_texture_from_BMP("resources/dialogue_box.bmp", db_texture, db_texture_width, db_texture_height)) { return SDL_APP_FAILURE; }
     if (!load_texture_from_BMP("resources/static.bmp", static_texture, static_texture_width, static_texture_height)) { return SDL_APP_FAILURE; }
     if (!load_texture_from_BMP("resources/control_flip.bmp", flip_texture, flip_texture_width, flip_texture_height)) { return SDL_APP_FAILURE; }
-
-
+    if (!load_texture_from_BMP("resources/hard_mode_bg_normal.bmp", bg_hard_normal_texture, bg_hard_normal_texture_width, bg_hard_normal_texture_height)) { return SDL_APP_FAILURE; }
+    if (!load_texture_from_BMP("resources/hard_mode_bg_taunt.bmp", bg_hard_taunt_texture, bg_hard_taunt_texture_width, bg_hard_taunt_texture_height)) { return SDL_APP_FAILURE; }
 
     snap_lines_high_score = {
         "No one can beat me.",
@@ -404,6 +415,7 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
     if (!init_sound("resources\\game_music_3.wav", &game_music[2])) { return SDL_APP_FAILURE; }
     if (!init_sound("resources\\new_high_score.wav", &new_high_score)) { return SDL_APP_FAILURE; }
     if (!init_sound("resources\\static.wav", &static_noise)) { return SDL_APP_FAILURE; }
+    if (!init_sound("resources\\final_boss_music.wav", &final_boss_music)) { return SDL_APP_FAILURE; }
 
     game_playlist_index = random(0, GAME_PLAYLIST_COUNT - 1);
     std::cout << game_playlist_index;
@@ -787,7 +799,18 @@ void drawSprite(float x_pos, float y_pos, SDL_Texture*& texture, int& texture_wi
 }
 
 void drawBackgroundSprite() {
-    drawSprite(0.0, 0.0, bg_texture, bg_texture_width, bg_texture_height);
+    if (!in_hard_mode) {
+        drawSprite(0.0, 0.0, bg_texture, bg_texture_width, bg_texture_height);
+    }
+    else {
+        // if the player is dying, we want snap to be laughing
+        if (in_death_animation) {
+            drawSprite(0.0, 0.0, bg_hard_taunt_texture, bg_hard_taunt_texture_width, bg_hard_taunt_texture_height);
+        }
+        else {
+            drawSprite(0.0, 0.0, bg_hard_normal_texture, bg_hard_normal_texture_width, bg_hard_normal_texture_height);
+        }
+    }
 }
 
 // update the player sprite postion based on the game data
@@ -910,14 +933,25 @@ void drawTimer() {
     }
 
     // draw the clock text
-    drawText(505.0, 100.0, 5.0, 1.0, time_string);
+    if (!in_hard_mode) {
+        drawText(505.0, 100.0, 5.0, 1.0, time_string);
+    }
+    else {
+        drawText(900.0, 150.0, 5.0, 1.0, time_string);
+    }
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE); // set color back to white
 }
 
 void drawLevelCounter() {
     std::stringstream ss;
     ss << game.GetCurrentLevel() << "/10";
-    drawText(1000.0, 100.0, 2.0, 1.0, ss.str());
+
+    if (!in_hard_mode) {
+        drawText(1000.0, 100.0, 2.0, 1.0, ss.str());
+    }
+    else {
+        drawText(100.0, 200.0, 2.0, 1.0, ss.str());
+    }
 }
 
 void drawUI() {
@@ -1306,7 +1340,12 @@ SDL_AppResult SDL_AppIterate(void* appstate)
         drawUI();
 
         /* play music */
-        playSoundContinuous(game_music[game_playlist_index]);
+        if (!in_hard_mode) {
+            playSoundContinuous(game_music[game_playlist_index]);
+        }
+        else {
+            playSoundContinuous(final_boss_music);
+        }
     }
     else if (in_death_animation) {
 
@@ -1377,6 +1416,7 @@ void closeSoundVariables() {
     closeSound(menu_music);
     closeSound(menu_music_hard);
     closeSound(menu_select_option);
+    closeSound(final_boss_music);
     for (int i = 0; i < GAME_PLAYLIST_COUNT; ++i) {
         closeSound(game_music[i]);
     }
