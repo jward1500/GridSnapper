@@ -118,6 +118,7 @@ static Uint64 hard_mode_animation_start_time;
 
 bool in_hard_mode = false;
 bool in_flip_mode = false;
+bool in_invisible_mode = false;
 
 /*---------------------------------------------*/
 
@@ -213,6 +214,11 @@ static int bg_hard_normal_texture_height = 0;
 static SDL_Texture* bg_hard_taunt_texture = NULL;
 static int bg_hard_taunt_texture_width = 0;
 static int bg_hard_taunt_texture_height = 0;
+
+// invisible tile texture
+static SDL_Texture* invisible_texture = NULL;
+static int invisible_texture_width = 0;
+static int invisible_texture_height = 0;
 
 /*---------------------------------------------*/
 
@@ -377,6 +383,7 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
     if (!load_texture_from_BMP("resources/control_flip.bmp", flip_texture, flip_texture_width, flip_texture_height)) { return SDL_APP_FAILURE; }
     if (!load_texture_from_BMP("resources/hard_mode_bg_normal.bmp", bg_hard_normal_texture, bg_hard_normal_texture_width, bg_hard_normal_texture_height)) { return SDL_APP_FAILURE; }
     if (!load_texture_from_BMP("resources/hard_mode_bg_taunt.bmp", bg_hard_taunt_texture, bg_hard_taunt_texture_width, bg_hard_taunt_texture_height)) { return SDL_APP_FAILURE; }
+    if (!load_texture_from_BMP("resources/invisible.bmp", invisible_texture, invisible_texture_width, invisible_texture_height)) { return SDL_APP_FAILURE; }
 
     snap_lines_high_score = {
         "No one can beat me.",
@@ -436,6 +443,14 @@ void disableFlipMode() {
     in_flip_mode = false;
 }
 
+void flickInvisibleMode() {
+    in_invisible_mode = !in_invisible_mode;
+}
+
+void disableInvisibleMode() {
+    in_invisible_mode = false;
+}
+
 // set the death sprite location, mark game state as in_death_animation, set death animation timer
 void activateDeathAnimation(MoveDirection dir) {
 
@@ -444,6 +459,7 @@ void activateDeathAnimation(MoveDirection dir) {
 
     // reset all hard mode modifiers
     disableFlipMode();
+    disableInvisibleMode();
 
     in_death_animation = true;
 
@@ -485,6 +501,7 @@ void activateWinningAnimation() {
 
     // disable in game modifiers for hard mode as well
     disableFlipMode();
+    disableInvisibleMode();
 
     in_winning_animation = true;
 
@@ -558,6 +575,8 @@ void MoveFlipped(SDL_Scancode code, MoveDirection& move_direction, MoveResult& m
 
 // handle all keyboard inputs when user is in a game
 void handleGameInput(SDL_Event* event) {
+
+    // out params for the MoveNormal and the MoveFlipped functions
     MoveDirection move_direction;
     MoveResult move_result;
     
@@ -578,6 +597,9 @@ void handleGameInput(SDL_Event* event) {
     else if (in_hard_mode) {
         if (move_result == MoveResult::FLIP) {
             flickFlipMode();
+        }
+        else if (move_result == MoveResult::INVIS) {
+            flickInvisibleMode();
         }
     }
 }
@@ -821,8 +843,13 @@ void setPlayerSpritePosition() {
 }
 
 void drawPlayerSprite() {
+
+    // we still need to set the player position on the screen for the death animation, we just won't draw it
     setPlayerSpritePosition();
-    drawSprite(playerX, playerY, p_texture, p_texture_width, p_texture_height);
+
+    if (!in_invisible_mode) {
+        drawSprite(playerX, playerY, p_texture, p_texture_width, p_texture_height);
+    }
 }
 
 void drawObstacleSprite(Pos pos) {
@@ -848,6 +875,12 @@ void drawFlipSprite(Pos pos) {
     drawSprite(flipX, flipY, flip_texture, flip_texture_width, flip_texture_height);
 }
 
+void drawInvisSprite(Pos pos) {
+    float invisX = pos.x * 100 + 100;
+    float invisY = pos.y * 100 + 300;
+    drawSprite(invisX, invisY, invisible_texture, invisible_texture_width, invisible_texture_height);
+}
+
 // use game data to determine where the obstacle and the goal sprites should be drawn
 void drawObstaclesAndGoals() {
     for (int i = 0; i < GRID_WIDTH; ++i) {
@@ -871,6 +904,9 @@ void drawObstaclesAndGoals() {
                     if (current_space == GridSpace::FLIP) 
                     { 
                         drawFlipSprite(current_pos); 
+                    }
+                    else if (current_space == GridSpace::INVIS) {
+                        drawInvisSprite(current_pos);
                     }
                 }
 
@@ -1331,6 +1367,7 @@ SDL_AppResult SDL_AppIterate(void* appstate)
         }
     }
     else if (in_game) {
+
         /* draw sprites */
         drawBackgroundSprite();
         drawPlayerSprite();

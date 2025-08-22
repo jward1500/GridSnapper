@@ -60,7 +60,7 @@ Level LevelData::GetLevel1() {
 			GridSpace::EMPTY,
 			GridSpace::EMPTY,
 			GridSpace::EMPTY,
-			GridSpace::EMPTY,
+			GridSpace::INVIS,
 			GridSpace::EMPTY,
 			GridSpace::EMPTY,
 			GridSpace::EMPTY,

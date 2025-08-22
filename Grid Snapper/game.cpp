@@ -86,6 +86,11 @@ MoveResult Game::Move(MoveDirection dir) {
 		levels[current_level].ClearSpace(next_pos);
 		return MoveResult::FLIP;
 	}
+	else if (future_space == GridSpace::INVIS) {
+		pos = next_pos;
+		levels[current_level].ClearSpace(next_pos);
+		return MoveResult::INVIS;
+	}
 	else {
 		pos = next_pos;
 		return MoveResult::SUCCESS;
