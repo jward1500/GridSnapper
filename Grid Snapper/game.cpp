@@ -150,7 +150,7 @@ GameStats Game::GetLevelStats() {
 
 void Game::ResetGame() {
 	pos = { 0, 5 };
-	current_level = 0;
+	current_level = 9;
 
 	// reset all game stats
 	current_game_stats.deaths = 0;
@@ -215,6 +215,10 @@ bool Game::HasCheated() {
 
 bool Game::HasBeatSnap() {
 	return has_beat_snap;
+}
+
+bool Game::InLevelTen() {
+	return current_level == 9;
 }
 
 // this hard code the level data for now, it will manually set the matrices in the level objects

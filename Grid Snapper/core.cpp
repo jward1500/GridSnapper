@@ -122,6 +122,8 @@ static bool in_invisible_mode = false;
 static bool in_darkness_mode = false;
 static bool in_spam_mode = false;
 static int spam_counter = 20;
+static bool in_remember_animation = false;
+static Uint64 remember_animation_start_time;
 
 /*---------------------------------------------*/
 
@@ -1076,11 +1078,34 @@ void drawLevelCounter() {
     }
 }
 
+void drawRememberAnimation() {
+    Uint64 current_animation_time = SDL_GetTicks() - remember_animation_start_time;
+    if ((current_animation_time / 1500) % 2 == 0) {
+        drawText(473.0, 445.0, 2.0, 1.0, "Just Remember XD");
+    }
+}
+
+
 void drawUI() {
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE); // set color to white
     drawDeathCounter();
     drawTimer();
     drawLevelCounter();
+
+    // turn on remember animation in this condition
+    if (!in_remember_animation && in_hard_mode && game.InLevelTen() && in_darkness_mode && in_invisible_mode) {
+        in_remember_animation = true;
+        remember_animation_start_time = SDL_GetTicks();
+    }
+    // remember animation has been activated
+    else if (in_remember_animation && in_hard_mode && game.InLevelTen() && in_darkness_mode && in_invisible_mode) {
+        drawRememberAnimation();
+    }
+    // at any point, turn off remember animation if none of the conditions are true
+    else {
+        in_remember_animation = false;
+    }
+
 }
 
 /* calling this will effectively play the death animation for 2.0 seconds, and then will automatically 

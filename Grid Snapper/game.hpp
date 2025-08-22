@@ -81,6 +81,8 @@ public:
 
 	bool HasBeatSnap();
 
+	bool InLevelTen();
+
 private:
 	std::vector<Level> levels;
 	GameStats current_game_stats;
