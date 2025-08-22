@@ -479,6 +479,7 @@ void enableSpamMode() {
 }
 
 void disableSpamMode() {
+    spam_counter = 20;
     in_spam_mode = false;
 }
 

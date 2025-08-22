@@ -8,12 +8,12 @@ Level LevelData::GetLevel1() {
 			GridSpace::EMPTY,
 			GridSpace::EMPTY,
 			GridSpace::EMPTY,
+			GridSpace::FLIP,
 			GridSpace::EMPTY,
 			GridSpace::EMPTY,
 			GridSpace::EMPTY,
 			GridSpace::EMPTY,
-			GridSpace::EMPTY,
-			GridSpace::EMPTY,
+			GridSpace::FLIP,
 		},
 		{
 			// 2
@@ -34,12 +34,12 @@ Level LevelData::GetLevel1() {
 			GridSpace::EMPTY,
 			GridSpace::EMPTY,
 			GridSpace::EMPTY,
-			GridSpace::DARK,
 			GridSpace::EMPTY,
 			GridSpace::EMPTY,
 			GridSpace::EMPTY,
 			GridSpace::EMPTY,
 			GridSpace::EMPTY,
+			GridSpace::FLIP,
 		},
 		{
 			// 4
@@ -72,7 +72,7 @@ Level LevelData::GetLevel1() {
 			GridSpace::EMPTY,
 			GridSpace::EMPTY,
 			GridSpace::EMPTY,
-			GridSpace::SPAM,
+			GridSpace::EMPTY,
 			GridSpace::EMPTY,
 			GridSpace::EMPTY,
 			GridSpace::EMPTY,
@@ -95,25 +95,25 @@ Level LevelData::GetLevel2() {
 			GridSpace::OBSTACLE,
 			GridSpace::EMPTY,
 			GridSpace::EMPTY,
-			GridSpace::EMPTY,
+			GridSpace::FLIP,
 			GridSpace::OBSTACLE
 		},
 		{
 			// 2
 			GridSpace::EMPTY,
-			GridSpace::EMPTY,
-			GridSpace::EMPTY,
-			GridSpace::OBSTACLE,
+			GridSpace::FLIP,
 			GridSpace::EMPTY,
 			GridSpace::OBSTACLE,
 			GridSpace::EMPTY,
+			GridSpace::OBSTACLE,
+			GridSpace::FLIP,
 			GridSpace::OBSTACLE,
 			GridSpace::EMPTY,
 			GridSpace::OBSTACLE
 		},
 		{
 			// 3
-			GridSpace::EMPTY,
+			GridSpace::INVIS,
 			GridSpace::OBSTACLE,
 			GridSpace::OBSTACLE,
 			GridSpace::OBSTACLE,
@@ -154,10 +154,10 @@ Level LevelData::GetLevel2() {
 			// 6
 			GridSpace::EMPTY,
 			GridSpace::EMPTY,
-			GridSpace::EMPTY,
+			GridSpace::INVIS,
 			GridSpace::OBSTACLE,
 			GridSpace::EMPTY,
-			GridSpace::EMPTY,
+			GridSpace::INVIS,
 			GridSpace::EMPTY,
 			GridSpace::OBSTACLE,
 			GridSpace::EMPTY,
@@ -173,7 +173,7 @@ Level LevelData::GetLevel3() {
 			GridSpace::EMPTY,
 			GridSpace::EMPTY,
 			GridSpace::EMPTY,
-			GridSpace::EMPTY,
+			GridSpace::SPAM,
 			GridSpace::EMPTY,
 			GridSpace::EMPTY,
 			GridSpace::EMPTY,
@@ -185,14 +185,14 @@ Level LevelData::GetLevel3() {
 			// 2
 			GridSpace::EMPTY,
 			GridSpace::EMPTY,
-			GridSpace::EMPTY,
+			GridSpace::FLIP,
 			GridSpace::OBSTACLE,
-			GridSpace::EMPTY,
-			GridSpace::OBSTACLE,
-			GridSpace::OBSTACLE,
+			GridSpace::FLIP,
 			GridSpace::OBSTACLE,
 			GridSpace::OBSTACLE,
-			GridSpace::EMPTY
+			GridSpace::OBSTACLE,
+			GridSpace::OBSTACLE,
+			GridSpace::FLIP
 		},
 		{
 			// 3
@@ -211,14 +211,14 @@ Level LevelData::GetLevel3() {
 			// 4
 			GridSpace::EMPTY,
 			GridSpace::EMPTY,
-			GridSpace::EMPTY,
+			GridSpace::FLIP,
 			GridSpace::OBSTACLE,
-			GridSpace::EMPTY,
-			GridSpace::OBSTACLE,
-			GridSpace::OBSTACLE,
+			GridSpace::FLIP,
 			GridSpace::OBSTACLE,
 			GridSpace::OBSTACLE,
-			GridSpace::EMPTY
+			GridSpace::OBSTACLE,
+			GridSpace::OBSTACLE,
+			GridSpace::FLIP
 		},
 		{
 			// 5
@@ -226,9 +226,9 @@ Level LevelData::GetLevel3() {
 			GridSpace::OBSTACLE,
 			GridSpace::EMPTY,
 			GridSpace::OBSTACLE,
+			GridSpace::SPAM,
 			GridSpace::EMPTY,
-			GridSpace::EMPTY,
-			GridSpace::EMPTY,
+			GridSpace::SPAM,
 			GridSpace::GOAL,
 			GridSpace::OBSTACLE,
 			GridSpace::EMPTY,
@@ -237,14 +237,14 @@ Level LevelData::GetLevel3() {
 			// 6
 			GridSpace::EMPTY,
 			GridSpace::EMPTY,
-			GridSpace::EMPTY,
+			GridSpace::FLIP,
 			GridSpace::OBSTACLE,
-			GridSpace::EMPTY,
-			GridSpace::OBSTACLE,
-			GridSpace::OBSTACLE,
+			GridSpace::FLIP,
 			GridSpace::OBSTACLE,
 			GridSpace::OBSTACLE,
-			GridSpace::EMPTY
+			GridSpace::OBSTACLE,
+			GridSpace::OBSTACLE,
+			GridSpace::FLIP
 		}
 	});
 }
@@ -256,9 +256,9 @@ Level LevelData::GetLevel4() {
 			GridSpace::OBSTACLE,
 			GridSpace::EMPTY,
 			GridSpace::OBSTACLE,
+			GridSpace::FLIP,
 			GridSpace::EMPTY,
-			GridSpace::EMPTY,
-			GridSpace::EMPTY,
+			GridSpace::DARK,
 			GridSpace::EMPTY,
 			GridSpace::OBSTACLE,
 			GridSpace::OBSTACLE,
@@ -267,15 +267,15 @@ Level LevelData::GetLevel4() {
 		{
 			// 2
 			GridSpace::EMPTY,
+			GridSpace::FLIP,
 			GridSpace::EMPTY,
-			GridSpace::EMPTY,
+			GridSpace::SPAM,
+			GridSpace::OBSTACLE,
+			GridSpace::FLIP,
 			GridSpace::EMPTY,
 			GridSpace::OBSTACLE,
 			GridSpace::EMPTY,
-			GridSpace::EMPTY,
-			GridSpace::OBSTACLE,
-			GridSpace::EMPTY,
-			GridSpace::EMPTY
+			GridSpace::INVIS
 		},
 		{
 			// 3
@@ -293,15 +293,15 @@ Level LevelData::GetLevel4() {
 		{
 			// 4
 			GridSpace::EMPTY,
-			GridSpace::EMPTY,
+			GridSpace::FLIP,
 			GridSpace::GOAL,
 			GridSpace::OBSTACLE,
 			GridSpace::OBSTACLE,
+			GridSpace::DARK,
 			GridSpace::EMPTY,
-			GridSpace::EMPTY,
-			GridSpace::EMPTY,
-			GridSpace::EMPTY,
-			GridSpace::EMPTY
+			GridSpace::DARK,
+			GridSpace::FLIP,
+			GridSpace::FLIP
 		},
 		{
 			// 5
@@ -320,12 +320,12 @@ Level LevelData::GetLevel4() {
 			// 6
 			GridSpace::EMPTY,
 			GridSpace::EMPTY,
-			GridSpace::EMPTY,
+			GridSpace::DARK,
 			GridSpace::EMPTY,
 			GridSpace::EMPTY,
 			GridSpace::OBSTACLE,
 			GridSpace::OBSTACLE,
-			GridSpace::EMPTY,
+			GridSpace::FLIP,
 			GridSpace::EMPTY,
 			GridSpace::OBSTACLE
 		}
