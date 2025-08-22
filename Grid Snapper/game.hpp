@@ -30,7 +30,8 @@ enum class MoveResult {
 	WIN,
 	FLIP,
 	INVIS,
-	DARK
+	DARK,
+	SPAM
 };
 
 class Game {

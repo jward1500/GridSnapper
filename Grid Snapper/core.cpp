@@ -116,10 +116,12 @@ SDL_Scancode previous_scancodes[PREVIOUS_SCANCODES_SIZE];
 bool in_hard_mode_animation = false;
 static Uint64 hard_mode_animation_start_time;
 
-bool in_hard_mode = false;
-bool in_flip_mode = false;
-bool in_invisible_mode = false;
-bool in_darkness_mode = false;
+static bool in_hard_mode = false;
+static bool in_flip_mode = false;
+static bool in_invisible_mode = false;
+static bool in_darkness_mode = false;
+static bool in_spam_mode = false;
+static int spam_counter = 20;
 
 /*---------------------------------------------*/
 
@@ -225,6 +227,11 @@ static int invisible_texture_height = 0;
 static SDL_Texture* darkness_texture = NULL;
 static int darkness_texture_width = 0;
 static int darkness_texture_height = 0;
+
+// spam tile texture
+static SDL_Texture* spam_texture = NULL;
+static int spam_texture_width = 0;
+static int spam_texture_height = 0;
 
 /*---------------------------------------------*/
 
@@ -391,6 +398,7 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
     if (!load_texture_from_BMP("resources/hard_mode_bg_taunt.bmp", bg_hard_taunt_texture, bg_hard_taunt_texture_width, bg_hard_taunt_texture_height)) { return SDL_APP_FAILURE; }
     if (!load_texture_from_BMP("resources/invisible.bmp", invisible_texture, invisible_texture_width, invisible_texture_height)) { return SDL_APP_FAILURE; }
     if (!load_texture_from_BMP("resources/darkness.bmp", darkness_texture, darkness_texture_width, darkness_texture_height)) { return SDL_APP_FAILURE; }
+    if (!load_texture_from_BMP("resources/spam.bmp", spam_texture, spam_texture_width, spam_texture_height)) { return SDL_APP_FAILURE; }
 
     snap_lines_high_score = {
         "No one can beat me.",
@@ -466,6 +474,14 @@ void disableDarknessMode() {
     in_darkness_mode = false;
 }
 
+void enableSpamMode() {
+    in_spam_mode = true;
+}
+
+void disableSpamMode() {
+    in_spam_mode = false;
+}
+
 // set the death sprite location, mark game state as in_death_animation, set death animation timer
 void activateDeathAnimation(MoveDirection dir) {
 
@@ -476,6 +492,8 @@ void activateDeathAnimation(MoveDirection dir) {
     disableFlipMode();
     disableInvisibleMode();
     disableDarknessMode();
+    disableSpamMode();
+    spam_counter = 20;
 
     in_death_animation = true;
 
@@ -519,6 +537,7 @@ void activateWinningAnimation() {
     disableFlipMode();
     disableInvisibleMode();
     disableDarknessMode();
+    disableSpamMode();
 
     in_winning_animation = true;
 
@@ -593,6 +612,15 @@ void MoveFlipped(SDL_Scancode code, MoveDirection& move_direction, MoveResult& m
 // handle all keyboard inputs when user is in a game
 void handleGameInput(SDL_Event* event) {
 
+    // lol, player can spam with any form of input they want
+    if (in_spam_mode) {
+        --spam_counter;
+        if (!spam_counter) {
+            disableSpamMode();
+        }
+        return;
+    }
+
     // out params for the MoveNormal and the MoveFlipped functions
     MoveDirection move_direction;
     MoveResult move_result;
@@ -620,6 +648,9 @@ void handleGameInput(SDL_Event* event) {
         }
         else if (move_result == MoveResult::DARK) {
             flickDarknessMode();
+        }
+        else if (move_result == MoveResult::SPAM) {
+            enableSpamMode();
         }
     }
 }
@@ -840,6 +871,19 @@ void drawSprite(float x_pos, float y_pos, SDL_Texture*& texture, int& texture_wi
     SDL_RenderTexture(renderer, texture, NULL, &dst_rect);
 }
 
+// general purpose function used to draw debug text on the screen
+void drawText(float x_pos, float y_pos, float scale, float original_scale, string text) {
+    SDL_SetRenderScale(renderer, scale, scale); // set the scale to appropriate value
+
+    // scale the x and y position according to the given scale
+    float new_x = x_pos / scale;
+    float new_y = y_pos / scale;
+
+    SDL_RenderDebugText(renderer, new_x, new_y, text.c_str());
+
+    SDL_SetRenderScale(renderer, original_scale, original_scale); // set the scale back to the original value
+}
+
 void drawBackgroundSprite() {
     if (!in_hard_mode) {
         drawSprite(0.0, 0.0, bg_texture, bg_texture_width, bg_texture_height);
@@ -867,8 +911,24 @@ void drawPlayerSprite() {
     // we still need to set the player sprite position on the screen regardless of what mode we are in, we just won't draw it
     setPlayerSpritePosition();
 
-    if (!in_invisible_mode) {
-        drawSprite(playerX, playerY, p_texture, p_texture_width, p_texture_height);
+    // don't draw the sprite at all
+    if (in_invisible_mode) {
+        return;
+    }
+
+    drawSprite(playerX, playerY, p_texture, p_texture_width, p_texture_height);
+
+    if (in_spam_mode) {
+        std::stringstream ss;
+        ss << spam_counter;
+        string spam_counter_text = ss.str();
+
+        // format to always show 2 digits of spam countdown
+        if (spam_counter < 10) {
+            spam_counter_text = "0" + spam_counter_text;
+        }
+
+        drawText(playerX + 28.0, playerY + 35.0, 3.0, 1.0, spam_counter_text);
     }
 }
 
@@ -907,6 +967,12 @@ void drawDarkSprite(Pos pos) {
     drawSprite(darkX, darkY, darkness_texture, darkness_texture_width, darkness_texture_height);
 }
 
+void drawSpamSprite(Pos pos) {
+    float spamX = pos.x * 100 + 100;
+    float spamY = pos.y * 100 + 300;
+    drawSprite(spamX, spamY, spam_texture, spam_texture_width, spam_texture_height);
+}
+
 // use game data to determine where the obstacle and the goal sprites should be drawn
 void drawObstaclesAndGoals() {
     for (int i = 0; i < GRID_WIDTH; ++i) {
@@ -937,6 +1003,9 @@ void drawObstaclesAndGoals() {
                     else if (current_space == GridSpace::DARK) {
                         drawDarkSprite(current_pos);
                     }
+                    else if (current_space == GridSpace::SPAM) {
+                        drawSpamSprite(current_pos);
+                    }
                 }
 
                 if (current_space == GridSpace::OBSTACLE) { drawObstacleSprite(current_pos); }
@@ -944,19 +1013,6 @@ void drawObstaclesAndGoals() {
             }
         }
     }
-}
-
-// general purpose function used to draw debug text on the screen
-void drawText(float x_pos, float y_pos, float scale, float original_scale, string text) {
-    SDL_SetRenderScale(renderer, scale, scale); // set the scale to appropriate value
-
-    // scale the x and y position according to the given scale
-    float new_x = x_pos / scale;
-    float new_y = y_pos / scale;
-
-    SDL_RenderDebugText(renderer, new_x, new_y, text.c_str());
-
-    SDL_SetRenderScale(renderer, original_scale, original_scale); // set the scale back to the original value
 }
 
 void drawDeathCounter() {
@@ -1511,6 +1567,7 @@ void destroyAllTextures() {
     SDL_DestroyTexture(flip_texture);
     SDL_DestroyTexture(invisible_texture);
     SDL_DestroyTexture(darkness_texture);
+    SDL_DestroyTexture(spam_texture);
 }
 
 /* This function runs once at shutdown. */
