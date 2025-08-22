@@ -11,7 +11,8 @@ enum class GridSpace {
 	OBSTACLE,
 	GOAL,
 	FLIP,
-	INVIS
+	INVIS,
+	DARK
 };
 
 struct DeletedSpace {

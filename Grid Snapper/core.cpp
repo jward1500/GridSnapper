@@ -119,6 +119,7 @@ static Uint64 hard_mode_animation_start_time;
 bool in_hard_mode = false;
 bool in_flip_mode = false;
 bool in_invisible_mode = false;
+bool in_darkness_mode = false;
 
 /*---------------------------------------------*/
 
@@ -219,6 +220,11 @@ static int bg_hard_taunt_texture_height = 0;
 static SDL_Texture* invisible_texture = NULL;
 static int invisible_texture_width = 0;
 static int invisible_texture_height = 0;
+
+// darkness tile texture
+static SDL_Texture* darkness_texture = NULL;
+static int darkness_texture_width = 0;
+static int darkness_texture_height = 0;
 
 /*---------------------------------------------*/
 
@@ -384,6 +390,7 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
     if (!load_texture_from_BMP("resources/hard_mode_bg_normal.bmp", bg_hard_normal_texture, bg_hard_normal_texture_width, bg_hard_normal_texture_height)) { return SDL_APP_FAILURE; }
     if (!load_texture_from_BMP("resources/hard_mode_bg_taunt.bmp", bg_hard_taunt_texture, bg_hard_taunt_texture_width, bg_hard_taunt_texture_height)) { return SDL_APP_FAILURE; }
     if (!load_texture_from_BMP("resources/invisible.bmp", invisible_texture, invisible_texture_width, invisible_texture_height)) { return SDL_APP_FAILURE; }
+    if (!load_texture_from_BMP("resources/darkness.bmp", darkness_texture, darkness_texture_width, darkness_texture_height)) { return SDL_APP_FAILURE; }
 
     snap_lines_high_score = {
         "No one can beat me.",
@@ -451,6 +458,14 @@ void disableInvisibleMode() {
     in_invisible_mode = false;
 }
 
+void flickDarknessMode() {
+    in_darkness_mode = !in_darkness_mode;
+}
+
+void disableDarknessMode() {
+    in_darkness_mode = false;
+}
+
 // set the death sprite location, mark game state as in_death_animation, set death animation timer
 void activateDeathAnimation(MoveDirection dir) {
 
@@ -460,6 +475,7 @@ void activateDeathAnimation(MoveDirection dir) {
     // reset all hard mode modifiers
     disableFlipMode();
     disableInvisibleMode();
+    disableDarknessMode();
 
     in_death_animation = true;
 
@@ -502,6 +518,7 @@ void activateWinningAnimation() {
     // disable in game modifiers for hard mode as well
     disableFlipMode();
     disableInvisibleMode();
+    disableDarknessMode();
 
     in_winning_animation = true;
 
@@ -600,6 +617,9 @@ void handleGameInput(SDL_Event* event) {
         }
         else if (move_result == MoveResult::INVIS) {
             flickInvisibleMode();
+        }
+        else if (move_result == MoveResult::DARK) {
+            flickDarknessMode();
         }
     }
 }
@@ -844,7 +864,7 @@ void setPlayerSpritePosition() {
 
 void drawPlayerSprite() {
 
-    // we still need to set the player position on the screen for the death animation, we just won't draw it
+    // we still need to set the player sprite position on the screen regardless of what mode we are in, we just won't draw it
     setPlayerSpritePosition();
 
     if (!in_invisible_mode) {
@@ -881,6 +901,12 @@ void drawInvisSprite(Pos pos) {
     drawSprite(invisX, invisY, invisible_texture, invisible_texture_width, invisible_texture_height);
 }
 
+void drawDarkSprite(Pos pos) {
+    float darkX = pos.x * 100 + 100;
+    float darkY = pos.y * 100 + 300;
+    drawSprite(darkX, darkY, darkness_texture, darkness_texture_width, darkness_texture_height);
+}
+
 // use game data to determine where the obstacle and the goal sprites should be drawn
 void drawObstaclesAndGoals() {
     for (int i = 0; i < GRID_WIDTH; ++i) {
@@ -907,6 +933,9 @@ void drawObstaclesAndGoals() {
                     }
                     else if (current_space == GridSpace::INVIS) {
                         drawInvisSprite(current_pos);
+                    }
+                    else if (current_space == GridSpace::DARK) {
+                        drawDarkSprite(current_pos);
                     }
                 }
 
@@ -1369,9 +1398,12 @@ SDL_AppResult SDL_AppIterate(void* appstate)
     else if (in_game) {
 
         /* draw sprites */
-        drawBackgroundSprite();
+        if (!in_darkness_mode) {
+            drawBackgroundSprite();
+            drawObstaclesAndGoals();
+        }
+        
         drawPlayerSprite();
-        drawObstaclesAndGoals();
 
         /* draw UI */
         drawUI();
@@ -1477,6 +1509,8 @@ void destroyAllTextures() {
     SDL_DestroyTexture(db_texture);
     SDL_DestroyTexture(static_texture);
     SDL_DestroyTexture(flip_texture);
+    SDL_DestroyTexture(invisible_texture);
+    SDL_DestroyTexture(darkness_texture);
 }
 
 /* This function runs once at shutdown. */

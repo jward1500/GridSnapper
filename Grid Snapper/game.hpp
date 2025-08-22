@@ -29,7 +29,8 @@ enum class MoveResult {
 	DIE,
 	WIN,
 	FLIP,
-	INVIS
+	INVIS,
+	DARK
 };
 
 class Game {

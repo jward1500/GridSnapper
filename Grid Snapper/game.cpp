@@ -91,6 +91,11 @@ MoveResult Game::Move(MoveDirection dir) {
 		levels[current_level].ClearSpace(next_pos);
 		return MoveResult::INVIS;
 	}
+	else if (future_space == GridSpace::DARK) {
+		pos = next_pos;
+		levels[current_level].ClearSpace(next_pos);
+		return MoveResult::DARK;
+	}
 	else {
 		pos = next_pos;
 		return MoveResult::SUCCESS;
