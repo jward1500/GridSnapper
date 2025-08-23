@@ -65,13 +65,19 @@ public:
 
 	void InsertNewRecord(std::string const& player_name);
 
+	void InsertNewRecordHardMode(std::string const& player_name);
+
 	void SaveGame();
 
 	std::vector<Record> GetTopTimes();
 
+	std::vector<Record> GetTopTimesHardMode();
+
 	/* to be called after all level times are set and the total time is the full time. Simply returns true if 
 		the total time is less than any of the records in the save file*/ 
 	bool WasRecordSet();
+
+	bool WasRecordSetHardMode();
 
 	int GetSnapLinesHighScoreIndex();
 
@@ -91,6 +97,7 @@ private:
 
 	// persistent data
 	std::vector<Record> top_times;
+	std::vector<Record> top_times_hard;
 	int snap_lines_high_score_index;
 	bool has_beat_snap;
 	bool has_cheated_and_beat_snap;

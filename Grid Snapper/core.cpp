@@ -702,7 +702,12 @@ void activateHighScores() {
         game.IncrementSnapLinesHighScoreIndex();
     }
     snap_lines_high_score_index = game.GetSnapLinesHighScoreIndex();
-    top_times = game.GetTopTimes();
+    if (!in_hard_mode) {
+        top_times = game.GetTopTimes();
+    }
+    else {
+        top_times = game.GetTopTimesHardMode();
+    }
 }
 
 void flickHardModeSwitch() {
@@ -797,7 +802,12 @@ void handleRecordEntryInput(SDL_Event* event) {
         stopAllSounds();
 
         // handle name submission and record saving
-        game.InsertNewRecord(player_name);
+        if (!in_hard_mode) {
+            game.InsertNewRecord(player_name);
+        }
+        else {
+            game.InsertNewRecordHardMode(player_name);
+        }
         game.SaveGame();
         in_record_entry = false;
         in_game_menu = true;
@@ -1113,7 +1123,7 @@ void drawUI() {
 
 void executeDeathAnimation() {
 
-    Uint32 current_animation_time = SDL_GetTicks() - death_animation_start_time;
+    Uint64 current_animation_time = SDL_GetTicks() - death_animation_start_time;
     
     // check to see if death animation timer is up
     if (current_animation_time > 2000) {
@@ -1147,7 +1157,7 @@ void executeDeathAnimation() {
 
 void executeWinningAnimation() {
 
-    Uint32 current_animation_time = SDL_GetTicks() - winning_animation_start_time;
+    Uint64 current_animation_time = SDL_GetTicks() - winning_animation_start_time;
 
     // check to see if winning animation timer is up
     if (current_animation_time > 2000) {
@@ -1161,7 +1171,13 @@ void executeWinningAnimation() {
 
             // update the game data for the game summary
             final_game_stats = game.GetLevelStats();
-            new_record_set = game.WasRecordSet();
+
+            if (!in_hard_mode) {
+                new_record_set = game.WasRecordSet();
+            }
+            else {
+                new_record_set = game.WasRecordSetHardMode();
+            }
             summary_animation_start_time = SDL_GetTicks();
             in_game_summary_animation = true;
         }
@@ -1205,7 +1221,7 @@ void drawTotalTime(bool should_display_time) {
 // display the game stats in a timed manner
 void executeGameSummaryAnimation() {
 
-    Uint32 current_animation_time = SDL_GetTicks() - summary_animation_start_time;
+    Uint64 current_animation_time = SDL_GetTicks() - summary_animation_start_time;
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE); // set color to white
 
     // check to see if summary animation timer is up
@@ -1324,7 +1340,7 @@ void executeGameSummaryAnimation() {
 }
 
 void drawEnterToContinueInfo() {
-    Uint32 current_animation_time = SDL_GetTicks() - still_game_summary_start_time;
+    Uint64 current_animation_time = SDL_GetTicks() - still_game_summary_start_time;
 
     // pulse in and out every 2 seconds
     if ((current_animation_time / 2000) % 2) {
@@ -1397,7 +1413,7 @@ void drawGameMenuHardMode() {
 void drawRecordEntryUI() {
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE); // set color to white
 
-    Uint32 current_animation_time = SDL_GetTicks() - record_entry_start_time;  
+    Uint64 current_animation_time = SDL_GetTicks() - record_entry_start_time;  
 
     string enter_record_text = "ENTER YOUR NAME: " + player_name;
 
@@ -1419,34 +1435,54 @@ void drawRecordEntryUI() {
 }
 
 void drawHighScoresUI() {
-    SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE); // set color to white
-    
-    if (game.HasCheated()) {
-        drawSprite(100.0, 700.0, s_speak_x2_texture, s_speak_x2_texture_width, s_speak_x2_texture_height);
-        drawSprite(300.0, 650.0, db_texture, db_texture_width, db_texture_height);
-        drawText(370.0, 711.0, 1.5, 1.0, "You can't just edit your score and pretend you beat me.");
-    }
-    else if (game.HasBeatSnap()) {
-        drawSprite(100.0, 700.0, s_speak_x2_texture, s_speak_x2_texture_width, s_speak_x2_texture_height);
-        drawSprite(300.0, 650.0, db_texture, db_texture_width, db_texture_height);
-        drawText(370.0, 711.0, 1.3, 1.0, "Okay. I get it. Type 'snap' in the menu if you have the guts.");
-    }
-    else if (snap_lines_high_score_index < 12) {
-        drawSprite(100.0, 700.0, s_speak_x2_texture, s_speak_x2_texture_width, s_speak_x2_texture_height);
-        drawSprite(300.0, 650.0, db_texture, db_texture_width, db_texture_height);
-        drawText(370.0, 711.0, 2.0, 1.0, snap_lines_high_score[snap_lines_high_score_index]);
-    }
-    else {
-        drawSprite(750.0, 440.0, t_texture, t_texture_width, t_texture_height);
-        drawSprite(-50.0, 440.0, t_texture, t_texture_width, t_texture_height);
-    }
 
-    drawText(204.0, 100.0, 5.0, 1.0, "Snapper Hall of Fame");
-    for (int i = 0; i < top_times.size(); ++i) {
-        std::stringstream ss;
-        ss << (i + 1) << ": " << top_times[i].record_holder << " ----- " << formatMillisecondsString(top_times[i].time) << endl;
-        drawText(395.0, (i * 75.0) + 250.0, 2.0, 1.0, ss.str());
+    // not in hard mode
+    if (!in_hard_mode) {
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE); // set color to white
+        if (game.HasCheated()) {
+            drawSprite(100.0, 700.0, s_speak_x2_texture, s_speak_x2_texture_width, s_speak_x2_texture_height);
+            drawSprite(300.0, 650.0, db_texture, db_texture_width, db_texture_height);
+            drawText(370.0, 711.0, 1.5, 1.0, "You can't just edit your score and pretend you beat me.");
+        }
+        else if (game.HasBeatSnap()) {
+            drawSprite(100.0, 700.0, s_speak_x2_texture, s_speak_x2_texture_width, s_speak_x2_texture_height);
+            drawSprite(300.0, 650.0, db_texture, db_texture_width, db_texture_height);
+            drawText(370.0, 711.0, 1.3, 1.0, "Okay. I get it. Type 'snap' in the menu if you have the guts.");
+        }
+        else if (snap_lines_high_score_index < 12) {
+            drawSprite(100.0, 700.0, s_speak_x2_texture, s_speak_x2_texture_width, s_speak_x2_texture_height);
+            drawSprite(300.0, 650.0, db_texture, db_texture_width, db_texture_height);
+            drawText(370.0, 711.0, 2.0, 1.0, snap_lines_high_score[snap_lines_high_score_index]);
+        }
+        else {
+            drawSprite(750.0, 440.0, t_texture, t_texture_width, t_texture_height);
+            drawSprite(-50.0, 440.0, t_texture, t_texture_width, t_texture_height);
+        }
+
+        drawText(204.0, 100.0, 5.0, 1.0, "Snapper Hall of Fame");
+        for (int i = 0; i < top_times.size(); ++i) {
+            std::stringstream ss;
+            ss << (i + 1) << ": " << top_times[i].record_holder << " ----- " << formatMillisecondsString(top_times[i].time) << endl;
+            drawText(395.0, (i * 75.0) + 250.0, 2.0, 1.0, ss.str());
+        }
     }
+    // in hard mode
+    else {
+        SDL_SetRenderDrawColor(renderer, 255, 0, 0, SDL_ALPHA_OPAQUE); // set color to red
+        drawText(204.0, 100.0, 5.0, 1.0, "Snapper Hall of Fame");
+        drawText(204.0, 100.0, 5.0, 1.0, "    XXX");
+        for (int i = 0; i < top_times.size(); ++i) {
+            std::stringstream ss;
+            ss << (i + 1) << ": " << top_times[i].record_holder << " ----- " << formatMillisecondsString(top_times[i].time) << endl;
+            drawText(395.0, (i * 75.0) + 250.0, 2.0, 1.0, ss.str());
+        }
+        int t_texture_modified_height = t_texture_height * 2;
+        int t_texture_modified_width = t_texture_width * 2;
+        drawSprite(900.0, 200.0, t_texture, t_texture_width, t_texture_modified_height);
+        drawSprite(-100.0, 600.0, t_texture, t_texture_modified_width, t_texture_height);
+    }
+    
+    
 
 }
 

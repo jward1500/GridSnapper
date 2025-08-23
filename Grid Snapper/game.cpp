@@ -28,11 +28,20 @@ void Game::pullTimeRecords() {
 	// open the save file (save file should be here)
 	std::ifstream save_file_input("save_file.txt");
 
+	// load the top times for standard mode
 	for (int i = 0; i < 5; ++i) {
 		std::string record_holder;
 		uint64_t time;
 		save_file_input >> record_holder >> time;
 		top_times.push_back({record_holder, time});
+	}
+
+	// load the top times for hard mode
+	for (int i = 0; i < 5; ++i) {
+		std::string record_holder;
+		uint64_t time;
+		save_file_input >> record_holder >> time;
+		top_times_hard.push_back({ record_holder, time });
 	}
 
 	save_file_input >> snap_lines_high_score_index;
@@ -177,12 +186,30 @@ void Game::InsertNewRecord(string const& player_name) {
 	top_times.resize(5);
 }
 
+void Game::InsertNewRecordHardMode(std::string const& player_name) {
+	for (auto itr = top_times_hard.begin(); itr < top_times_hard.end(); ++itr) {
+		if (current_game_stats.total_time < itr->time) {
+			top_times_hard.insert(itr, { player_name, current_game_stats.total_time });
+			break;
+		}
+	}
+	top_times_hard.resize(5);
+}
+
 void Game::SaveGame() {
 	// overwrite save data with top times data structure
 	std::ofstream save_file_output("save_file.txt", std::ios::trunc);
+
+	// write the top times for normal mode
 	for (auto& record : top_times) {
 		save_file_output << record.record_holder << " " << record.time << std::endl;
 	}
+
+	// write the top times for hard mode
+	for (auto& record : top_times_hard) {
+		save_file_output << record.record_holder << " " << record.time << std::endl;
+	}
+
 	save_file_output << snap_lines_high_score_index << std::endl;
 	save_file_output << has_beat_snap << std::endl;
 	save_file_output << has_cheated_and_beat_snap << std::endl;
@@ -196,8 +223,19 @@ bool Game::WasRecordSet() {
 	return false;
 }
 
+bool Game::WasRecordSetHardMode() {
+	for (auto& record : top_times_hard) {
+		if (current_game_stats.total_time < record.time) { return true; };
+	}
+	return false;
+}
+
 vector<Record> Game::GetTopTimes() {
 	return top_times;
+}
+
+vector<Record> Game::GetTopTimesHardMode() {
+	return top_times_hard;
 }
 
 int Game::GetSnapLinesHighScoreIndex() {
