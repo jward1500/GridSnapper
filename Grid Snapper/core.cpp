@@ -698,10 +698,9 @@ void activateGame() {
 void activateHighScores() {
     in_game_menu = false;
     in_high_scores = true;
-    if (!game.HasCheated()) {
-        game.IncrementSnapLinesHighScoreIndex();
-    }
+    game.IncrementSnapLinesHighScoreIndex(); 
     snap_lines_high_score_index = game.GetSnapLinesHighScoreIndex();
+
     if (!in_hard_mode) {
         top_times = game.GetTopTimes();
     }
@@ -1439,12 +1438,7 @@ void drawHighScoresUI() {
     // not in hard mode
     if (!in_hard_mode) {
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE); // set color to white
-        if (game.HasCheated()) {
-            drawSprite(100.0, 700.0, s_speak_x2_texture, s_speak_x2_texture_width, s_speak_x2_texture_height);
-            drawSprite(300.0, 650.0, db_texture, db_texture_width, db_texture_height);
-            drawText(370.0, 711.0, 1.5, 1.0, "You can't just edit your score and pretend you beat me.");
-        }
-        else if (game.HasBeatSnap()) {
+        if (game.HasBeatSnap()) {
             drawSprite(100.0, 700.0, s_speak_x2_texture, s_speak_x2_texture_width, s_speak_x2_texture_height);
             drawSprite(300.0, 650.0, db_texture, db_texture_width, db_texture_height);
             drawText(370.0, 711.0, 1.3, 1.0, "Okay. I get it. Type 'snap' in the menu if you have the guts.");

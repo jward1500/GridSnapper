@@ -83,8 +83,6 @@ public:
 
 	void IncrementSnapLinesHighScoreIndex();
 
-	bool HasCheated();
-
 	bool HasBeatSnap();
 
 	bool InLevelTen();
@@ -100,7 +98,6 @@ private:
 	std::vector<Record> top_times_hard;
 	int snap_lines_high_score_index;
 	bool has_beat_snap;
-	bool has_cheated_and_beat_snap;
 
 	// helper functions
 	void pullTimeRecords();
