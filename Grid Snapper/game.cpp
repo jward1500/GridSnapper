@@ -45,16 +45,9 @@ void Game::pullTimeRecords() {
 	}
 
 	save_file_input >> snap_lines_high_score_index;
-
 	save_file_input >> has_beat_snap;
-
+	save_file_input >> has_beat_snap_hard_mode;
 	save_file_input.close();
-
-	// DEBUG
-	for (auto& record : top_times) {
-		std::cout << record.record_holder << " " << record.time << std::endl;
-	}
-	std::cout << snap_lines_high_score_index << std::endl;
 }
 
 MoveResult Game::Move(MoveDirection dir) {
@@ -149,7 +142,7 @@ GameStats Game::GetLevelStats() {
 
 void Game::ResetGame() {
 	pos = { 0, 5 };
-	current_level = 0;
+	current_level = 9;
 
 	// reset all game stats
 	current_game_stats.deaths = 0;
@@ -161,7 +154,7 @@ void Game::ResetGame() {
 
 void Game::InsertNewRecord(string const& player_name) {
 
-	// if the total time is better than snap, player has legitimately beat snap
+	// if the total time is better than snap
 	if (current_game_stats.total_time < 35000) {
 		has_beat_snap = true;
 	}
@@ -176,6 +169,12 @@ void Game::InsertNewRecord(string const& player_name) {
 }
 
 void Game::InsertNewRecordHardMode(std::string const& player_name) {
+
+	// if the total time is better than snap
+	if (current_game_stats.total_time < 45000) {
+		has_beat_snap_hard_mode = true;
+	}
+
 	for (auto itr = top_times_hard.begin(); itr < top_times_hard.end(); ++itr) {
 		if (current_game_stats.total_time < itr->time) {
 			top_times_hard.insert(itr, { player_name, current_game_stats.total_time });
@@ -201,6 +200,7 @@ void Game::SaveGame() {
 
 	save_file_output << snap_lines_high_score_index << std::endl;
 	save_file_output << has_beat_snap << std::endl;
+	save_file_output << has_beat_snap_hard_mode << std::endl;
 	save_file_output.close();
 }
 
@@ -241,6 +241,10 @@ bool Game::HasBeatSnap() {
 
 bool Game::InLevelTen() {
 	return current_level == 9;
+}
+
+bool Game::HasBeatSnapHardMode() {
+	return has_beat_snap_hard_mode;
 }
 
 // this hard code the level data for now, it will manually set the matrices in the level objects

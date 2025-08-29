@@ -353,7 +353,7 @@ void stopAllSounds() {
     }
 }
 
-// call this function to start the level timer
+// call this function to start the level timer, and reset the level spaces. This MUST be called before playing a level.
 void startLevel() {
     level_start_time = SDL_GetTicks(); // set the level start time to now
     game.ResetCurrentLevel();
@@ -689,8 +689,11 @@ void decrementMenuOption() {
 
 void activateGame() {
     stopAllSounds();
+
+    // reset the game and start the level
     game.ResetGame();
-    level_start_time = SDL_GetTicks();
+    startLevel();
+
     in_game_menu = false;
     in_game = true;
 }
@@ -760,7 +763,11 @@ void handleGameMenuInput(SDL_Event* event) {
         previous_scancodes[1] == SDL_SCANCODE_N &&
         previous_scancodes[2] == SDL_SCANCODE_A &&
         event->key.scancode == SDL_SCANCODE_P) {
-        flickHardModeSwitch();
+        
+        // flip to hard mode only if the player has beat snap
+        if (game.HasBeatSnap()) {
+            flickHardModeSwitch();
+        }
     }
 
     // update previous scancodes
@@ -1387,7 +1394,6 @@ void drawGameMenuHardMode() {
     drawSprite(150.0, 100.0, c_x2_texture, c_x2_texture_width, c_x2_texture_height);
     drawText(-50.0, 100.0, 12.0, 1.0, "S N A P  S N A P  S N A P");
     drawSprite(250.0, 375.0, m_texture, m_texture_width, m_texture_height);
-    drawSprite(800.0, 600.0, s_laugh_x3_texture, s_laugh_x3_texture_width, s_laugh_x3_texture_height);
 
     // draw menu option text
     if (selected_choice == MenuOption::PLAY) { SDL_SetRenderDrawColor(renderer, 255, 255, 0, SDL_ALPHA_OPAQUE); }
@@ -1403,10 +1409,12 @@ void drawGameMenuHardMode() {
     drawText(270.0, 730, 2.0, 1.0, "> Quit Game");
     drawText(265.0, 730, 2.0, 1.0, "-------------");
     SDL_SetRenderDrawColor(renderer, 255, 0, 0, SDL_ALPHA_OPAQUE);
-
-    // draw special text
-    drawText(550.0, 550.0, 2.0, 1.0, "Press 'H' if you want your ass kicked XD.");
-
+    
+    // only draw her smug look if she has you beat
+    drawText(550.0, 550.0, 2.0, 1.0, "Press 'H' if you want your butt kicked XD.");
+    if (!game.HasBeatSnapHardMode()) {
+        drawSprite(800.0, 600.0, s_laugh_x3_texture, s_laugh_x3_texture_width, s_laugh_x3_texture_height);
+    }
 }
 
 void drawRecordEntryUI() {

@@ -87,6 +87,8 @@ public:
 
 	bool InLevelTen();
 
+	bool HasBeatSnapHardMode();
+
 private:
 	std::vector<Level> levels;
 	GameStats current_game_stats;
@@ -98,6 +100,7 @@ private:
 	std::vector<Record> top_times_hard;
 	int snap_lines_high_score_index;
 	bool has_beat_snap;
+	bool has_beat_snap_hard_mode;
 
 	// helper functions
 	void pullTimeRecords();
