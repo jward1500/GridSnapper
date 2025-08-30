@@ -235,6 +235,11 @@ static SDL_Texture* spam_texture = NULL;
 static int spam_texture_width = 0;
 static int spam_texture_height = 0;
 
+// snap shocked texture
+static SDL_Texture* s_shocked_x3_texture = NULL;
+static int s_shocked_x3_texture_width = 0;
+static int s_shocked_x3_texture_height = 0;
+
 /*---------------------------------------------*/
 
 /* constants */
@@ -401,6 +406,7 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
     if (!load_texture_from_BMP("resources/invisible.bmp", invisible_texture, invisible_texture_width, invisible_texture_height)) { return SDL_APP_FAILURE; }
     if (!load_texture_from_BMP("resources/darkness.bmp", darkness_texture, darkness_texture_width, darkness_texture_height)) { return SDL_APP_FAILURE; }
     if (!load_texture_from_BMP("resources/spam.bmp", spam_texture, spam_texture_width, spam_texture_height)) { return SDL_APP_FAILURE; }
+    if (!load_texture_from_BMP("resources/snap_shocked_x3.bmp", s_shocked_x3_texture, s_shocked_x3_texture_width, s_shocked_x3_texture_height)) { return SDL_APP_FAILURE; }
 
     snap_lines_high_score = {
         "No one can beat me.",
@@ -724,7 +730,8 @@ void flickHardModeSwitch() {
     stopAllSounds();
 }
 
-void handleGameMenuInput(SDL_Event* event) {
+// returns true if game is to continue, returns false if game is to quit
+bool handleGameMenuInput(SDL_Event* event) {
     if (event->key.scancode == SDL_SCANCODE_UP) { incrementMenuOption(); }
     else if (event->key.scancode == SDL_SCANCODE_DOWN) { decrementMenuOption(); }
     else if (event->key.scancode == SDL_SCANCODE_RETURN) {
@@ -737,6 +744,8 @@ void handleGameMenuInput(SDL_Event* event) {
             case MenuOption::SCORES:
                 activateHighScores();
                 break;
+            case MenuOption::QUIT:
+                return false;
             }
         }
         else {
@@ -774,6 +783,8 @@ void handleGameMenuInput(SDL_Event* event) {
     previous_scancodes[0] = previous_scancodes[1];
     previous_scancodes[1] = previous_scancodes[2];
     previous_scancodes[2] = event->key.scancode;
+
+    return true;
 }
 
 void incrementCurrentPlayerLetter() {
@@ -807,13 +818,14 @@ void handleRecordEntryInput(SDL_Event* event) {
         
         stopAllSounds();
 
-        // handle name submission and record saving
+        // handle name submission and record saving, then reset the player name
         if (!in_hard_mode) {
             game.InsertNewRecord(player_name);
         }
         else {
             game.InsertNewRecordHardMode(player_name);
         }
+        player_name = "A";
         game.SaveGame();
         in_record_entry = false;
         in_game_menu = true;
@@ -856,7 +868,11 @@ SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event)
     if (event->type == SDL_EVENT_KEY_DOWN) {
         if (in_game) { handleGameInput(event); }
         else if (in_game_summary) { handleGameSummaryInput(event); }
-        else if (in_game_menu) { handleGameMenuInput(event); }
+        else if (in_game_menu) { 
+            if (!handleGameMenuInput(event)) {
+                return SDL_APP_SUCCESS;
+            }
+        }
         else if (in_record_entry) { handleRecordEntryInput(event); }
         else if (in_high_scores) { handleHighScoresInput(event); }
     }
@@ -1368,7 +1384,10 @@ void drawGameMenu() {
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE); // set color to white
 
     drawText(300.0, 100.0, 6.0, 1.0, "GRID SNAPPER");
-    drawSprite(250.0, 175.0, s_base_x2_texture, s_base_x2_texture_width, s_base_x2_texture_height);
+
+    if (!game.HasBeatSnapHardMode()) {
+        drawSprite(250.0, 175.0, s_base_x2_texture, s_base_x2_texture_width, s_base_x2_texture_height);
+    }
     drawSprite(250.0, 375.0, m_texture, m_texture_width, m_texture_height);
 
     // draw menu option text
@@ -1446,7 +1465,12 @@ void drawHighScoresUI() {
     // not in hard mode
     if (!in_hard_mode) {
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE); // set color to white
-        if (game.HasBeatSnap()) {
+
+        if (game.HasBeatSnapHardMode()) {
+            drawSprite(750.0, 440.0, t_texture, t_texture_width, t_texture_height);
+            drawSprite(-50.0, 440.0, t_texture, t_texture_width, t_texture_height);
+        }
+        else if (game.HasBeatSnap()) {
             drawSprite(100.0, 700.0, s_speak_x2_texture, s_speak_x2_texture_width, s_speak_x2_texture_height);
             drawSprite(300.0, 650.0, db_texture, db_texture_width, db_texture_height);
             drawText(370.0, 711.0, 1.3, 1.0, "Okay. I get it. Type 'snap' in the menu if you have the guts.");
@@ -1480,7 +1504,15 @@ void drawHighScoresUI() {
         }
         int t_texture_modified_height = t_texture_height * 2;
         int t_texture_modified_width = t_texture_width * 2;
-        drawSprite(900.0, 200.0, t_texture, t_texture_width, t_texture_modified_height);
+
+        // if the player has beat snap in hard mode, snap is now flabberghasted
+        if (!game.HasBeatSnapHardMode()) {
+            drawSprite(900.0, 200.0, t_texture, t_texture_width, t_texture_modified_height);
+        }
+        else {
+            drawSprite(900.0, 600.0, s_shocked_x3_texture, s_shocked_x3_texture_width, s_shocked_x3_texture_height);
+        }
+
         drawSprite(-100.0, 600.0, t_texture, t_texture_modified_width, t_texture_height);
     }
     
@@ -1632,6 +1664,7 @@ void destroyAllTextures() {
     SDL_DestroyTexture(invisible_texture);
     SDL_DestroyTexture(darkness_texture);
     SDL_DestroyTexture(spam_texture);
+    SDL_DestroyTexture(s_shocked_x3_texture);
 }
 
 /* This function runs once at shutdown. */
