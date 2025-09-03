@@ -4,7 +4,7 @@
 
 Test out your muscle memory with this speedrunning-focused arcade game. Practice the levels to improve your time and fight against <strong>Snap</strong> and <strong>Croc</strong> to get on the leaderboard.
 
-If you're simply interested in playing the game, check out this [Grid Snapper Webpage](https://jward1500.github.io/). If you're curious about how the game was made, the code for the game is public with a project setup guide below.
+If you're simply interested in playing the game, check out this [Grid Snapper Webpage](https://jward1500.github.io/GridSnapper/index). If you're curious about how the game was made, the code for the game is public with a project setup guide below.
 
 ## About the Project and Developer
 
@@ -13,4 +13,6 @@ What started out as a quick summer project to experiment with [SDL](https://www.
 The code isn't perfect, and there are many things I would have designed better in retrospect. The code in "core.cpp" certainly turned more messy than intended due to additions I added on after designing the initial game. Still, I chose to make this a project with personality with a tradeoff of messier design. The goal is to apply what I learned from mistakes made in this project to future projects.
 
 ## Project Setup Guide
+
+Coming soon!
 
