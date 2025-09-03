@@ -4,7 +4,7 @@
 
 Test out your muscle memory with this speedrunning-focused arcade game. Practice the levels to improve your time and fight against <strong>Snap</strong> and <strong>Croc</strong> to get on the leaderboard.
 
-If you're simply interested in playing the game, check out this [Release Page](https://www.youtube.com/). If you're curious about how the game was made, the code for the game is public with a project setup guide below.
+If you're simply interested in playing the game, check out this [Grid Snapper Webpage](https://jward1500.github.io/). If you're curious about how the game was made, the code for the game is public with a project setup guide below.
 
 ## About the Project and Developer
 
