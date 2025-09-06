@@ -14,5 +14,34 @@ The code isn't perfect, and there are many things I would have designed better i
 
 ## Project Setup Guide
 
-Coming soon!
+The following instructions are for setting up a Visual Studio project on Windows. This is my first time creating a public Visual Studio repository like this with extra assets, so the setup is pretty involved. But with enough perseverance, you can run this in Visual Studio too!
+
+### Get GridSnapper and SDL 3.0
+
+- Clone the repository. This will provide you with the solution and the code for the project.
+
+- Download [SDL 3.0](https://github.com/libsdl-org/SDL/releases/tag/release-3.2.22) and unzip the folder, remember where you unzipped SDL to.
+
+### Connecting the project to SDL 3.0 (the fun part)
+
+- Set an *environment variable* called SDL_DIR to the path SDL 3.0 is located on your computer. This can be done by accessing the “Advanced System Settings” on your windows computer -> selecting the “Advanced” tab -> clicking the “environment variables” button -> then creating a new variable. This environment variable is important for the GridSnapper project to find important SDL files.
+
+- Open the unzipped SDL 3.0 folder and navigate to VisualC -> SDL.sln, open this in Visual Studio and build the project. You don’t need to run the SDL project itself, you only need the .dll and .lib files it produces. It’s normal that SDL can’t be executed directly, since it’s a library, not an application.
+
+- In the same way, open the GridSnapper Visual Studio Solution from the repository you cloned and build it in Debug and Release mode. *If you had Visual Studio open before you set the environment variable, you will need to restart it.* If you try to run it, it will fail. This is normal because it isn't set up quite yet.
+
+- In SDL's build output directory (VisualC -> x64 -> Debug and Release), copy and paste <code>SDL.dll</code> into GridSnapper’s build output directory (x64 -> Debug and Release). You will need to grab and place the Release dll and the Debug dll. 
+
+Now, the Grid Snapper Visual Studio project should be able to find and use SDL.
+
+### Getting the resources
+
+- Download the latest release from GridSnapper repository, and unzip the folder.
+
+- In the folder, navigate to Release->resources. Copy the entire contents of the folder. This folder contains all images and sounds for the game.
+
+- In the GridSnapper repository folder, navigate to the x64 directory, and in both the Release and Debug folders, create a new "resource" folder and paste all of the project resources in it.
+
+*After all that, you should be able to run the project in Debug and Release mode!*
+
 
