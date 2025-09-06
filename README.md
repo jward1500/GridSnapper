@@ -28,7 +28,7 @@ The following instructions are for setting up a Visual Studio project on Windows
 
 - Open the unzipped SDL 3.0 folder and navigate to VisualC -> SDL.sln, open this in Visual Studio and build the project. You don’t need to run the SDL project itself, you only need the .dll and .lib files it produces. It’s normal that SDL can’t be executed directly, since it’s a library, not an application.
 
-- In the same way, open the GridSnapper Visual Studio Solution from the repository you cloned and build it in Debug and Release mode. These will fail, but that is okay, we just need those build output directories.
+- In the same way, open the GridSnapper Visual Studio Solution from the repository you cloned and build it in Debug and Release mode. *If you had Visual Studio open before you set the environment variable, you will need to restart it.* If you try to run it, it will fail. This is normal because it isn't set up quite yet.
 
 - In SDL's build output directory (VisualC -> x64 -> Debug and Release), copy and paste <code>SDL.dll</code> into GridSnapper’s build output directory (x64 -> Debug and Release). You will need to grab and place the Release dll and the Debug dll. 
 
