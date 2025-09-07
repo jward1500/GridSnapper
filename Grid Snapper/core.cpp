@@ -865,7 +865,7 @@ void handleHighScoresInput(SDL_Event* event) {
         event->key.scancode == SDL_SCANCODE_ESCAPE) {
         activateMenuScreenFromHighScores();
     }
-    else if (in_hard_mode && event->key.scancode == SDL_SCANCODE_C) {
+    else if (in_hard_mode && game.HasBeatSnapHardMode() && event->key.scancode == SDL_SCANCODE_C) {
         activateCreditsScreen();
     }
 }
@@ -877,7 +877,8 @@ void activateHighScoreScreenFromHighCredits() {
 
 void handleCreditsInput(SDL_Event* event) {
     if (event->key.scancode == SDL_SCANCODE_RETURN ||
-        event->key.scancode == SDL_SCANCODE_ESCAPE) {
+        event->key.scancode == SDL_SCANCODE_ESCAPE ||
+        event->key.scancode == SDL_SCANCODE_C) {
         activateHighScoreScreenFromHighCredits();
     }
 }
@@ -1535,6 +1536,9 @@ void drawHighScoresUI() {
             drawSprite(900.0, 200.0, t_texture, t_texture_width, t_texture_modified_height);
         }
         else {
+            SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE); // set color to white
+            drawText(750.0, 550.0, 2.0, 1.0, "Press 'C' for credits.");
+            drawText(750.0, 575.0, 1.0, 1.0, "It's okay Snap, I didn't think they could do it either.");
             drawSprite(900.0, 600.0, s_shocked_x3_texture, s_shocked_x3_texture_width, s_shocked_x3_texture_height);
         }
 
@@ -1548,6 +1552,7 @@ void drawHighScoresUI() {
 void executeHardModeAnimation() {
     Uint64 current_animation_time = SDL_GetTicks() - hard_mode_animation_start_time;
     if (current_animation_time > 930) {
+        in_hard_mode_animation = false;
         in_game_menu = true;
         return;
     }
