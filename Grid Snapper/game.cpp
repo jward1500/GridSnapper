@@ -142,7 +142,7 @@ GameStats Game::GetLevelStats() {
 
 void Game::ResetGame() {
 	pos = { 0, 5 };
-	current_level = 0;
+	current_level = 9;
 
 	// reset all game stats
 	current_game_stats.deaths = 0;

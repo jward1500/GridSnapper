@@ -1583,14 +1583,13 @@ SDL_AppResult SDL_AppIterate(void* appstate)
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);  /* black, full alpha */
     SDL_RenderClear(renderer);  /* start with a blank canvas. */
 
+    // handle visuals
     if (in_game_menu) {
         if (!in_hard_mode) {
             drawGameMenu();
-            playSoundContinuous(menu_music);
         }
         else {
             drawGameMenuHardMode();
-            playSoundContinuous(menu_music_hard);
         }
     }
     else if (in_game) {
@@ -1605,14 +1604,6 @@ SDL_AppResult SDL_AppIterate(void* appstate)
 
         /* draw UI */
         drawUI();
-
-        /* play music */
-        if (!in_hard_mode) {
-            playSoundContinuous(game_music[game_playlist_index]);
-        }
-        else {
-            playSoundContinuous(final_boss_music);
-        }
     }
     else if (in_death_animation) {
 
@@ -1646,7 +1637,6 @@ SDL_AppResult SDL_AppIterate(void* appstate)
     }
     else if (in_record_entry) {
         drawRecordEntryUI();
-        playSoundContinuous(new_high_score);
     }
     else if (in_high_scores) {
         drawHighScoresUI();
@@ -1659,6 +1649,29 @@ SDL_AppResult SDL_AppIterate(void* appstate)
     }
 
     SDL_RenderPresent(renderer);  /* put it all on the screen! */
+
+
+    // handle continuous audio
+
+    if (in_game_menu || in_high_scores || in_game_credits) {
+        if (!in_hard_mode) {
+            playSoundContinuous(menu_music);
+        }
+        else {
+            playSoundContinuous(menu_music_hard);
+        }
+    }
+    else if (in_game) {
+        if (!in_hard_mode) {
+            playSoundContinuous(game_music[game_playlist_index]);
+        }
+        else {
+            playSoundContinuous(final_boss_music);
+        }
+    }
+    else if (in_record_entry) {
+        playSoundContinuous(new_high_score);
+    }
 
     return SDL_APP_CONTINUE;
 }
