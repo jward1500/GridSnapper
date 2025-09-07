@@ -125,6 +125,10 @@ static int spam_counter = 20;
 static bool in_remember_animation = false;
 static Uint64 remember_animation_start_time;
 
+// variables used for the credit screen
+
+static bool in_game_credits = false;
+
 /*---------------------------------------------*/
 
 // player sprite variables
@@ -851,10 +855,30 @@ void activateMenuScreenFromHighScores() {
     in_game_menu = true;
 }
 
+void activateCreditsScreen() {
+    in_high_scores = false;
+    in_game_credits = true;
+}
+
 void handleHighScoresInput(SDL_Event* event) {
     if (event->key.scancode == SDL_SCANCODE_RETURN ||
         event->key.scancode == SDL_SCANCODE_ESCAPE) {
         activateMenuScreenFromHighScores();
+    }
+    else if (in_hard_mode && event->key.scancode == SDL_SCANCODE_C) {
+        activateCreditsScreen();
+    }
+}
+
+void activateHighScoreScreenFromHighCredits() {
+    in_game_credits = false;
+    in_high_scores = true;
+}
+
+void handleCreditsInput(SDL_Event* event) {
+    if (event->key.scancode == SDL_SCANCODE_RETURN ||
+        event->key.scancode == SDL_SCANCODE_ESCAPE) {
+        activateHighScoreScreenFromHighCredits();
     }
 }
 
@@ -875,6 +899,7 @@ SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event)
         }
         else if (in_record_entry) { handleRecordEntryInput(event); }
         else if (in_high_scores) { handleHighScoresInput(event); }
+        else if (in_game_credits) { handleCreditsInput(event); }
     }
 
     return SDL_APP_CONTINUE;  /* carry on with the program! */
@@ -1529,6 +1554,22 @@ void executeHardModeAnimation() {
     drawSprite(0, 0, static_texture, static_texture_width, static_texture_height);
 }
 
+void drawGameCredits() {
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE); // set color to red
+    drawText(200.0, 100.0, 5.0, 1.0, "Credits");
+    drawText(200.0, 200.0, 2.0, 1.0, "Developer: Josh Ward");
+    drawText(200.0, 250.0, 2.0, 1.0, "Pixel \"Artist\": Josh Ward");
+    drawText(200.0, 350.0, 3.0, 1.0, "Music");
+    drawText(200.0, 400.0, 2.0, 1.0, "Menu Theme: \"The Beaten Path\" - Andrew Langdon");
+    drawText(200.0, 450.0, 2.0, 1.0, "Game Playlist #1: \"Muriel\" - Bobby Richards");
+    drawText(200.0, 500.0, 2.0, 1.0, "Game Playlist #2: \"June\" - Bobby Richards");
+    drawText(200.0, 550.0, 2.0, 1.0, "Game Playlist #3: \"Moons\" - Patrick Patrikios");
+    drawText(200.0, 600.0, 2.0, 1.0, "Record Set: \"Running Errands\" - TrackTribe");
+    drawText(200.0, 650.0, 2.0, 1.0, "Snap Mode: \"Cosmic Drift\" - DivKid");
+    drawText(200.0, 750.0, 3.0, 1.0, "Special Thanks");
+    drawText(200.0, 800.0, 2.0, 1.0, "The SDL 3.0 Documentation. And Microsoft Paint");
+}
+
 
 /* This function runs once per frame, and is the heart of the program. */
 SDL_AppResult SDL_AppIterate(void* appstate)
@@ -1607,6 +1648,9 @@ SDL_AppResult SDL_AppIterate(void* appstate)
     }
     else if (in_hard_mode_animation) {
         executeHardModeAnimation();
+    }
+    else if (in_game_credits) {
+        drawGameCredits();
     }
 
     SDL_RenderPresent(renderer);  /* put it all on the screen! */
