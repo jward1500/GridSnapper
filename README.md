@@ -42,6 +42,14 @@ Now, the Grid Snapper Visual Studio project should be able to find and use SDL.
 
 - In the GridSnapper repository folder, navigate to the x64 directory, and in both the Release and Debug folders, create a new "resource" folder and paste all of the project resources in it.
 
+- Then, go back to the root directory of the release folder, and copy the <code>snap_speak.ico</code> file. Go to the repository folder, navigate to the x64 folder again, and outside of the Release and Debug folder, paste the icon file.
+
+The final folder hierarchy in the repository should be something like:
+
+- x64 contains Debug/ and Release/ and <code>snap_speak.ico</code>.
+- Release/ contains a resources/ directory that has all of the game's assets in it.
+- Debug/ also contains a resources/ directory that has all of the game's assets in it.
+
 *After all that, you should be able to run the project in Debug and Release mode!*
 
 
