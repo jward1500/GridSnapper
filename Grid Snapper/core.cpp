@@ -830,6 +830,7 @@ void handleRecordEntryInput(SDL_Event* event) {
             game.InsertNewRecordHardMode(player_name);
         }
         player_name = "A";
+        current_player_letter = 0;
         game.SaveGame();
         in_record_entry = false;
         in_game_menu = true;
@@ -1526,7 +1527,7 @@ void drawHighScoresUI() {
         for (int i = 0; i < top_times.size(); ++i) {
             std::stringstream ss;
             ss << (i + 1) << ": " << top_times[i].record_holder << " ----- " << formatMillisecondsString(top_times[i].time) << endl;
-            drawText(395.0, (i * 75.0) + 250.0, 2.0, 1.0, ss.str());
+            drawText(game.HasBeatSnapHardMode() ? 204.0 : 395.0, (i * 75.0) + 250.0, 2.0, 1.0, ss.str());
         }
         int t_texture_modified_height = t_texture_height * 2;
         int t_texture_modified_width = t_texture_width * 2;
