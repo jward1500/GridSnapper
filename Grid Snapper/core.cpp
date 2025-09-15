@@ -577,47 +577,47 @@ void activateMenuScreenFromGameSummary() {
 }
 
 void MoveNormal(SDL_Scancode code, MoveDirection& move_direction, MoveResult& move_result) {
-    switch (code) {
-    case SDL_SCANCODE_LEFT:
+
+    if (code == SDL_SCANCODE_LEFT || code == SDL_SCANCODE_A) {
         move_direction = MoveDirection::LEFT;
         move_result = game.Move(move_direction);
-        break;
-    case SDL_SCANCODE_UP:
+    }
+    else if (code == SDL_SCANCODE_UP || code == SDL_SCANCODE_W) {
         move_direction = MoveDirection::UP;
         move_result = game.Move(move_direction);
-        break;
-    case SDL_SCANCODE_RIGHT:
+    }
+    else if (code == SDL_SCANCODE_RIGHT || code == SDL_SCANCODE_D) {
         move_direction = MoveDirection::RIGHT;
         move_result = game.Move(move_direction);
-        break;
-    case SDL_SCANCODE_DOWN:
+    }
+    else if (code == SDL_SCANCODE_DOWN || code == SDL_SCANCODE_S) {
         move_direction = MoveDirection::DOWN;
         move_result = game.Move(move_direction);
-        break;
-    default:
+    }
+    else {
         move_result = MoveResult::SUCCESS;
     }
 }
 
 void MoveFlipped(SDL_Scancode code, MoveDirection& move_direction, MoveResult& move_result) {
-    switch (code) {
-    case SDL_SCANCODE_LEFT:
+    
+    if (code == SDL_SCANCODE_LEFT || code == SDL_SCANCODE_A) {
         move_direction = MoveDirection::RIGHT;
         move_result = game.Move(move_direction);
-        break;
-    case SDL_SCANCODE_UP:
+    }
+    else if (code == SDL_SCANCODE_UP || code == SDL_SCANCODE_W) {
         move_direction = MoveDirection::DOWN;
         move_result = game.Move(move_direction);
-        break;
-    case SDL_SCANCODE_RIGHT:
+    }
+    else if (code == SDL_SCANCODE_RIGHT || code == SDL_SCANCODE_D) {
         move_direction = MoveDirection::LEFT;
         move_result = game.Move(move_direction);
-        break;
-    case SDL_SCANCODE_DOWN:
+    }
+    else if (code == SDL_SCANCODE_DOWN || code == SDL_SCANCODE_S) {
         move_direction = MoveDirection::UP;
         move_result = game.Move(move_direction);
-        break;
-    default:
+    }
+    else {
         move_result = MoveResult::SUCCESS;
     }
 }
@@ -736,8 +736,8 @@ void flickHardModeSwitch() {
 
 // returns true if game is to continue, returns false if game is to quit
 bool handleGameMenuInput(SDL_Event* event) {
-    if (event->key.scancode == SDL_SCANCODE_UP) { incrementMenuOption(); }
-    else if (event->key.scancode == SDL_SCANCODE_DOWN) { decrementMenuOption(); }
+    if (event->key.scancode == SDL_SCANCODE_UP || event->key.scancode == SDL_SCANCODE_W) { incrementMenuOption(); }
+    else if (event->key.scancode == SDL_SCANCODE_DOWN || event->key.scancode == SDL_SCANCODE_S) { decrementMenuOption(); }
     else if (event->key.scancode == SDL_SCANCODE_RETURN) {
         if (!in_hard_mode) {
             playSoundOnce(menu_select_option);
@@ -837,15 +837,15 @@ void handleRecordEntryInput(SDL_Event* event) {
         return;
     }
     
-    if (event->key.scancode == SDL_SCANCODE_UP) {
+    if (event->key.scancode == SDL_SCANCODE_UP || event->key.scancode == SDL_SCANCODE_W) {
         incrementCurrentPlayerLetter();
         playSoundOnce(menu_change_option);
     }
-    else if (event->key.scancode == SDL_SCANCODE_DOWN) {
+    else if (event->key.scancode == SDL_SCANCODE_DOWN || event->key.scancode == SDL_SCANCODE_S) {
         decrementCurrentPlayerLetter();
         playSoundOnce(menu_change_option);
     }
-    else if (event->key.scancode == SDL_SCANCODE_RIGHT) {
+    else if (event->key.scancode == SDL_SCANCODE_RIGHT || event->key.scancode == SDL_SCANCODE_D) {
         nextPlayerNameLetter();
         playSoundOnce(menu_select_option);
     }
